@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>পোল্ট্রি প্রো - কমপ্লিট রিপোর্ট</title>
+    <title>পোল্ট্রি প্রো - বিস্তারিত রিপোর্ট</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
@@ -23,19 +23,10 @@
             background-color: #059669;
             color: white;
         }
-        
-        /* PDF optimizations */
-        .pdf-content {
-            width: 100%;
-            background: white !important;
-        }
-        
-        /* Force page breaks for long tables */
         .html2pdf__page-break {
             height: 0;
             page-break-before: always;
         }
-
         @media print {
             .no-print { display: none !important; }
         }
@@ -55,7 +46,7 @@
 
             <div class="flex items-center gap-3">
                 <button onclick="downloadCompleteReport()" class="bg-indigo-600 hover:bg-indigo-700 text-white px-5 py-2 rounded-lg flex items-center gap-2 transition-all shadow-lg font-bold text-sm">
-                    📥 ডাউনলোড কমপ্লিট রিপোর্ট (PDF)
+                    📥 ডাউনলোড রিপোর্ট (PDF)
                 </button>
                 <select id="batch-selector" onchange="switchBatch()" class="bg-slate-100 text-emerald-700 font-bold text-sm py-2 px-3 rounded-lg border border-slate-200 focus:ring-2 focus:ring-emerald-500 outline-none">
                 </select>
@@ -94,7 +85,7 @@
             </div>
         </div>
 
-        <!-- Forms Section (Hidden in PDF via CSS) -->
+        <!-- Forms Section -->
         <div class="no-print space-y-6">
             <section class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
                 <div class="bg-slate-50 px-5 py-3 border-b border-slate-200 flex justify-between items-center">
@@ -106,77 +97,87 @@
                     </div>
                 </div>
                 <div class="p-6">
-                    <form id="entry-form" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-4 items-end">
+                    <form id="entry-form" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-7 gap-3 items-end">
                         <div class="space-y-1">
                             <label class="text-[10px] font-bold text-slate-400 uppercase">তারিখ</label>
-                            <input type="date" id="f-date" class="w-full px-3 py-2 rounded-lg bg-slate-50 border border-slate-200 text-sm">
+                            <input type="date" id="f-date" class="w-full px-2 py-2 rounded-lg bg-slate-50 border border-slate-200 text-sm">
                         </div>
                         <div class="space-y-1">
                             <label class="text-[10px] font-bold text-slate-400 uppercase">বিবরণ</label>
-                            <select id="f-cat" class="w-full px-3 py-2 rounded-lg bg-slate-50 border border-slate-200 text-sm font-medium"></select>
+                            <select id="f-cat" class="w-full px-2 py-2 rounded-lg bg-slate-50 border border-slate-200 text-sm font-medium"></select>
                         </div>
                         <div class="space-y-1">
-                            <label class="text-[10px] font-bold text-slate-400 uppercase">পরিমাণ</label>
-                            <input type="number" id="f-qty" oninput="autoCalc()" placeholder="০" class="w-full px-3 py-2 rounded-lg bg-slate-50 border border-slate-200 text-sm font-bold">
+                            <label class="text-[10px] font-bold text-slate-400 uppercase" id="label-qty">পরিমাণ (টি)</label>
+                            <input type="number" id="f-qty" oninput="autoCalc()" placeholder="০" class="w-full px-2 py-2 rounded-lg bg-slate-50 border border-slate-200 text-sm font-bold">
+                        </div>
+                        <div class="space-y-1" id="div-kg">
+                            <label class="text-[10px] font-bold text-slate-400 uppercase">ওজন (কেজি)</label>
+                            <input type="number" id="f-kg" oninput="autoCalc()" placeholder="০" class="w-full px-2 py-2 rounded-lg bg-slate-50 border border-slate-200 text-sm font-bold">
                         </div>
                         <div class="space-y-1" id="div-rate">
-                            <label class="text-[10px] font-bold text-slate-400 uppercase">দর (টাকা)</label>
-                            <input type="number" id="f-rate" oninput="autoCalc()" placeholder="০" class="w-full px-3 py-2 rounded-lg bg-slate-50 border border-slate-200 text-sm font-bold">
+                            <label class="text-[10px] font-bold text-slate-400 uppercase" id="label-rate">দর (টাকা)</label>
+                            <input type="number" id="f-rate" oninput="autoCalc()" placeholder="০" class="w-full px-2 py-2 rounded-lg bg-slate-50 border border-slate-200 text-sm font-bold">
                         </div>
                         <div class="space-y-1" id="div-total">
                             <label class="text-[10px] font-bold text-slate-400 uppercase">মোট টাকা</label>
-                            <input type="number" id="f-total" readonly class="w-full px-3 py-2 rounded-lg bg-emerald-50 border border-emerald-100 text-sm font-black text-emerald-700">
+                            <input type="number" id="f-total" readonly class="w-full px-2 py-2 rounded-lg bg-emerald-50 border border-emerald-100 text-sm font-black text-emerald-700">
                         </div>
-                        <button type="button" onclick="saveEntry()" class="bg-emerald-600 text-white font-bold py-2 rounded-lg hover:bg-emerald-700 shadow-md text-sm">সেভ করুন</button>
+                        <button type="button" onclick="saveEntry()" class="bg-emerald-600 text-white font-bold py-2 rounded-lg hover:bg-emerald-700 shadow-md text-sm">সেভ</button>
                     </form>
                 </div>
             </section>
         </div>
 
-        <!-- Charts and Reports Summary -->
-        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            <div class="lg:col-span-2 bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+        <!-- Main Report Table -->
+        <div class="grid grid-cols-1 gap-6">
+            <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
                 <div class="px-5 py-4 bg-slate-50 border-b border-slate-200 flex justify-between items-center">
-                    <h3 class="font-bold text-sm text-slate-700">লেনদেনের বিস্তারিত তালিকা (সকল ডাটা)</h3>
-                    <span class="text-[10px] bg-indigo-100 text-indigo-700 px-2 py-1 rounded font-bold uppercase no-print">লাইভ আপডেট</span>
+                    <h3 class="font-bold text-sm text-slate-700">লেনদেনের বিস্তারিত রিপোর্ট (আয়-ব্যয় ও স্টক)</h3>
                 </div>
                 <div class="overflow-x-auto">
                     <table id="main-table" class="w-full text-xs text-left">
-                        <thead class="bg-slate-50 text-slate-500 border-b border-slate-200 font-bold">
+                        <thead class="bg-slate-50 text-slate-500 border-b border-slate-200 font-bold uppercase tracking-tighter">
                             <tr>
-                                <th class="px-5 py-4">তারিখ</th>
-                                <th class="px-5 py-4">বিবরণ</th>
-                                <th class="px-5 py-4 text-center">পরিমাণ</th>
-                                <th class="px-5 py-4 text-right">দর</th>
-                                <th class="px-5 py-4 text-right">মোট টাকা</th>
-                                <th class="px-5 py-4 text-center no-print">অ্যাকশন</th>
+                                <th class="px-4 py-4">তারিখ</th>
+                                <th class="px-4 py-4">বিবরণ</th>
+                                <th class="px-4 py-4 text-center">পরিমাণ (টি)</th>
+                                <th class="px-4 py-4 text-center">ওজন (কেজি)</th>
+                                <th class="px-4 py-4 text-right">দর (টাকা)</th>
+                                <th class="px-4 py-4 text-right">মোট (টাকা)</th>
+                                <th class="px-4 py-4 text-center no-print">অ্যাকশন</th>
                             </tr>
                         </thead>
                         <tbody id="transaction-body" class="divide-y divide-slate-100">
-                            <!-- Rows injected here -->
+                            <!-- Injected rows -->
                         </tbody>
                     </table>
                 </div>
             </div>
+        </div>
 
-            <div class="space-y-6">
-                <!-- Visual Summary -->
-                <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
-                    <h3 class="font-bold text-[11px] text-slate-400 uppercase mb-6">আর্থিক স্থিতি চার্ট</h3>
-                    <div class="chart-container">
-                        <canvas id="financeChart"></canvas>
-                    </div>
+        <!-- Charts & Summary -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
+                <h3 class="font-bold text-[11px] text-slate-400 uppercase mb-4">আর্থিক গ্রাফ</h3>
+                <div class="chart-container">
+                    <canvas id="financeChart"></canvas>
                 </div>
-
-                <!-- Footer Summary for PDF -->
-                <div class="bg-emerald-50 p-6 rounded-2xl border border-emerald-100 space-y-4">
-                    <h4 class="font-bold text-emerald-800 text-sm">ব্যাচ সামারি নোট</h4>
-                    <p class="text-xs text-emerald-600 leading-relaxed">এই রিপোর্টে বর্তমান ব্যাচের সকল আয়, ব্যয় এবং মুরগির স্টক এর সঠিক হিসাব প্রদর্শিত হয়েছে। নির্ভুল ডাটা নিশ্চিত করতে নিয়মিত এন্ট্রি দিন।</p>
-                    <div class="pt-4 border-t border-emerald-200">
-                        <div class="flex justify-between text-xs font-bold text-emerald-800">
-                            <span>নেট লাভ/ক্ষতি:</span>
-                            <span id="summary-profit-val">৳ ০</span>
-                        </div>
+            </div>
+            <div class="bg-emerald-50 p-6 rounded-2xl border border-emerald-100 flex flex-col justify-center">
+                <h4 class="font-bold text-emerald-800 text-lg mb-2">ব্যাচ সারসংক্ষেপ</h4>
+                <p class="text-sm text-emerald-600 mb-6">রিপোর্টে আয়ের ক্ষেত্রে মুরগির সংখ্যা ও মোট ওজনের ভিত্তিতে হিসাব করা হয়েছে।</p>
+                <div class="space-y-2">
+                    <div class="flex justify-between border-b border-emerald-200 pb-2">
+                        <span class="text-slate-600">মোট আয়:</span>
+                        <span class="font-bold text-emerald-700" id="sum-inc">৳ ০</span>
+                    </div>
+                    <div class="flex justify-between border-b border-emerald-200 pb-2">
+                        <span class="text-slate-600">মোট ব্যয়:</span>
+                        <span class="font-bold text-rose-600" id="sum-exp">৳ ০</span>
+                    </div>
+                    <div class="flex justify-between pt-2">
+                        <span class="font-bold text-slate-800">নিট লাভ/ক্ষতি:</span>
+                        <span class="font-black text-xl text-slate-900" id="sum-profit">৳ ০</span>
                     </div>
                 </div>
             </div>
@@ -218,37 +219,62 @@
             document.getElementById(`tab-${tab}`).classList.add('active');
             
             const cat = document.getElementById('f-cat');
-            const rateDiv = document.getElementById('div-rate');
-            const totalDiv = document.getElementById('div-total');
+            const divKg = document.getElementById('div-kg');
+            const divRate = document.getElementById('div-rate');
+            const divTotal = document.getElementById('div-total');
+            const labelQty = document.getElementById('label-qty');
+            const labelRate = document.getElementById('label-rate');
             
-            if(tab === 'expense') {
-                cat.innerHTML = `<option value="খাবার">খাবার</option><option value="বাচ্চা">বাচ্চা</option><option value="ঔষধ">ঔষধ</option><option value="লেবার">লেবার</option><option value="অন্যান্য">অন্যান্য খরচ</option>`;
-                rateDiv.classList.remove('hidden');
-                totalDiv.classList.remove('hidden');
-            } else if(tab === 'income') {
-                cat.innerHTML = `<option value="মুরগি বিক্রি">মুরগি বিক্রি</option><option value="ডিম বিক্রি">ডিম বিক্রি</option><option value="সার বিক্রি">সার বিক্রি</option>`;
-                rateDiv.classList.remove('hidden');
-                totalDiv.classList.remove('hidden');
+            if(tab === 'income') {
+                cat.innerHTML = `<option value="মুরগি বিক্রি">মুরগি বিক্রি</option><option value="ডিম বিক্রি">ডিম বিক্রি</option><option value="অন্যান্য">অন্যান্য আয়</option>`;
+                divKg.classList.remove('hidden');
+                divRate.classList.remove('hidden');
+                divTotal.classList.remove('hidden');
+                labelQty.innerText = "পরিমাণ (টি)";
+                labelRate.innerText = "দর (কেজি প্রতি)";
+            } else if(tab === 'expense') {
+                cat.innerHTML = `<option value="খাবার">খাবার</option><option value="বাচ্চা">বাচ্চা</option><option value="ঔষধ">ঔষধ</option><option value="অন্যান্য">অন্যান্য খরচ</option>`;
+                divKg.classList.add('hidden');
+                divRate.classList.remove('hidden');
+                divTotal.classList.remove('hidden');
+                labelQty.innerText = "পরিমাণ";
+                labelRate.innerText = "দর (টাকা)";
             } else {
                 cat.innerHTML = `<option value="স্টক ইন">স্টক ইন (+)</option><option value="মৃত্যু">মৃত্যু (-)</option>`;
-                rateDiv.classList.add('hidden');
-                totalDiv.classList.add('hidden');
+                divKg.classList.add('hidden');
+                divRate.classList.add('hidden');
+                divTotal.classList.add('hidden');
+                labelQty.innerText = "পরিমাণ (টি)";
             }
             autoCalc();
         }
 
         function autoCalc() {
             const qty = parseFloat(document.getElementById('f-qty').value) || 0;
+            const kg = parseFloat(document.getElementById('f-kg').value) || 0;
             const rate = parseFloat(document.getElementById('f-rate').value) || 0;
-            document.getElementById('f-total').value = (qty * rate) || '';
+            
+            let total = 0;
+            if(STATE.currentTab === 'income') {
+                // If chicken sales, usually by KG. If eggs, might be by unit. 
+                // For simplicity, we multiply KG * Rate if KG exists, else Qty * Rate.
+                total = kg > 0 ? (kg * rate) : (qty * rate);
+            } else {
+                total = qty * rate;
+            }
+            
+            document.getElementById('f-total').value = total || '';
         }
 
         function saveEntry() {
             const qty = parseFloat(document.getElementById('f-qty').value) || 0;
+            const kg = parseFloat(document.getElementById('f-kg').value) || 0;
             const rate = parseFloat(document.getElementById('f-rate').value) || 0;
             const date = document.getElementById('f-date').value;
+            const total = parseFloat(document.getElementById('f-total').value) || 0;
             
-            if(qty <= 0 || !date) return;
+            if(qty <= 0 && kg <= 0) return;
+            if(!date) return;
 
             STATE.entries.push({
                 id: Date.now(),
@@ -257,12 +283,14 @@
                 date: date,
                 cat: document.getElementById('f-cat').value,
                 qty: qty,
+                kg: kg,
                 rate: rate,
-                total: STATE.currentTab === 'stock' ? 0 : (qty * rate)
+                total: total
             });
 
             localStorage.setItem('p_data_v4', JSON.stringify(STATE.entries));
             document.getElementById('f-qty').value = '';
+            document.getElementById('f-kg').value = '';
             document.getElementById('f-rate').value = '';
             refreshUI();
         }
@@ -290,17 +318,21 @@
             document.getElementById('kpi-expense').innerText = `৳ ${exp.toLocaleString()}`;
             document.getElementById('kpi-profit').innerText = `৳ ${profit.toLocaleString()}`;
             document.getElementById('kpi-stock').innerText = `${stock} টি`;
-            document.getElementById('summary-profit-val').innerText = `৳ ${profit.toLocaleString()}`;
+            
+            document.getElementById('sum-inc').innerText = `৳ ${inc.toLocaleString()}`;
+            document.getElementById('sum-exp').innerText = `৳ ${exp.toLocaleString()}`;
+            document.getElementById('sum-profit').innerText = `৳ ${profit.toLocaleString()}`;
 
             document.getElementById('transaction-body').innerHTML = data.map(e => `
-                <tr class="hover:bg-slate-50 transition-colors border-b border-slate-50">
-                    <td class="px-5 py-4 font-bold text-slate-400">${e.date}</td>
-                    <td class="px-5 py-4 font-bold text-slate-700">${e.cat}</td>
-                    <td class="px-5 py-4 text-center font-bold">${e.qty}</td>
-                    <td class="px-5 py-4 text-right text-slate-500">${e.tab==='stock'?'-':'৳'+e.rate.toLocaleString()}</td>
-                    <td class="px-5 py-4 text-right font-black ${e.tab==='income'?'text-emerald-600':'text-rose-600'}">${e.tab==='stock'?'-':'৳'+e.total.toLocaleString()}</td>
-                    <td class="px-5 py-4 text-center no-print">
-                        <button onclick="deleteEntry(${e.id})" class="text-rose-300 hover:text-rose-600 transition-colors">🗑️</button>
+                <tr class="hover:bg-slate-50 border-b border-slate-50">
+                    <td class="px-4 py-4 text-slate-400 font-medium">${e.date}</td>
+                    <td class="px-4 py-4 font-bold text-slate-700">${e.cat}</td>
+                    <td class="px-4 py-4 text-center font-bold">${e.qty || '-'}</td>
+                    <td class="px-4 py-4 text-center font-bold text-indigo-600">${e.kg || '-'}</td>
+                    <td class="px-4 py-4 text-right text-slate-500">${e.tab==='stock'?'-':'৳'+e.rate.toLocaleString()}</td>
+                    <td class="px-4 py-4 text-right font-black ${e.tab==='income'?'text-emerald-600':'text-rose-600'}">${e.tab==='stock'?'-':'৳'+e.total.toLocaleString()}</td>
+                    <td class="px-4 py-4 text-center no-print">
+                        <button onclick="deleteEntry(${e.id})" class="text-rose-300 hover:text-rose-600">🗑️</button>
                     </td>
                 </tr>
             `).join('');
@@ -312,64 +344,43 @@
             const ctx = document.getElementById('financeChart').getContext('2d');
             if(myChart) myChart.destroy();
             myChart = new Chart(ctx, {
-                type: 'pie',
+                type: 'bar',
                 data: {
                     labels: ['আয়', 'ব্যয়'],
                     datasets: [{
-                        data: [inc || 1, exp || 0.1],
+                        label: 'টাকা',
+                        data: [inc, exp],
                         backgroundColor: ['#10b981', '#f43f5e'],
-                        borderColor: '#ffffff',
-                        borderWidth: 4
+                        borderRadius: 8
                     }]
                 },
                 options: { 
                     maintainAspectRatio: false,
-                    plugins: { 
-                        legend: { 
-                            position: 'bottom',
-                            labels: { font: { family: 'Noto Sans Bengali', weight: 'bold' } }
-                        } 
-                    } 
+                    scales: { y: { beginAtZero: true } },
+                    plugins: { legend: { display: false } }
                 }
             });
         }
 
-        // The Fix: Complete Data PDF Generation
         async function downloadCompleteReport() {
             const element = document.getElementById('capture-area');
             const pdfHeader = document.getElementById('pdf-only-header');
-            const nav = document.querySelector('nav');
             
-            // UI Preparation
             pdfHeader.classList.remove('hidden');
             document.getElementById('pdf-batch-display').innerText = `ব্যাচ: ${STATE.activeBatch}`;
             document.getElementById('pdf-date-display').innerText = `রিপোর্ট তারিখ: ${new Date().toLocaleDateString('bn-BD')}`;
             
-            // Set options for high resolution and full data
             const opt = {
-                margin: [0.5, 0.5, 0.5, 0.5],
-                filename: `Poultry_Report_${STATE.activeBatch}_${Date.now()}.pdf`,
+                margin: [0.5, 0.3, 0.5, 0.3],
+                filename: `Report_${STATE.activeBatch}.pdf`,
                 image: { type: 'jpeg', quality: 0.98 },
-                html2canvas: { 
-                    scale: 2, 
-                    useCORS: true, 
-                    logging: false,
-                    scrollY: 0,
-                    windowWidth: document.documentElement.offsetWidth
-                },
-                jsPDF: { 
-                    unit: 'in', 
-                    format: 'a4', 
-                    orientation: 'portrait' 
-                },
-                pagebreak: { mode: ['avoid-all', 'css', 'legacy'] }
+                html2canvas: { scale: 2, useCORS: true },
+                jsPDF: { unit: 'in', format: 'a4', orientation: 'portrait' },
+                pagebreak: { mode: 'avoid-all' }
             };
 
-            // Process and Save
             try {
                 await html2pdf().set(opt).from(element).save();
-            } catch (err) {
-                console.error("PDF generation error:", err);
             } finally {
                 pdfHeader.classList.add('hidden');
             }
