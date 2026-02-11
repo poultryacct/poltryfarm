@@ -3,206 +3,179 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>পোল্ট্রি ফার্ম ম্যানেজার প্রো - ফিক্সড ভার্সন</title>
+    <title>পোল্ট্রি প্রো - হাই রেজুলেশন রিপোর্ট</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <!-- PDF Generation Library -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Bengali:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     
     <style>
         body {
             font-family: 'Noto Sans Bengali', sans-serif;
-            background-color: #F1F5F9;
+            background-color: #F8FAFC;
         }
-        
         .chart-container {
             position: relative;
             width: 100%;
-            height: 250px;
+            height: 180px;
         }
-
         .tab-btn.active {
             background-color: #059669;
             color: white;
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
         }
-
-        /* PDF Styles */
-        #pdf-export-container {
-            background: white;
-        }
-
         @media print {
             .no-print { display: none !important; }
         }
-        
-        /* Custom scrollbar for table */
-        .custom-scrollbar::-webkit-scrollbar {
-            height: 4px;
-        }
-        .custom-scrollbar::-webkit-scrollbar-thumb {
-            background: #cbd5e1;
-            border-radius: 10px;
+        /* PDF Specific Styling */
+        .pdf-page {
+            background: white;
+            padding: 20px;
         }
     </style>
 </head>
 <body class="text-slate-800 pb-10">
 
-    <!-- Navbar -->
-    <nav class="bg-white shadow-md border-b border-slate-200 sticky top-0 z-50 no-print">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="flex flex-col md:flex-row justify-between items-center py-3 gap-3">
-                
-                <div class="flex items-center gap-2">
-                    <span class="text-3xl">🐤</span>
-                    <div>
-                        <h1 class="text-lg font-bold text-emerald-800 leading-tight">ফার্ম ম্যানেজার প্রো</h1>
-                        <p class="text-[10px] text-slate-500 uppercase tracking-wider">ড্যাশবোর্ড ও রিপোর্ট</p>
-                    </div>
+    <nav class="bg-white shadow-sm border-b border-slate-200 sticky top-0 z-50 no-print">
+        <div class="max-w-7xl mx-auto px-4 py-3 flex justify-between items-center">
+            <div class="flex items-center gap-2">
+                <span class="text-3xl">🐤</span>
+                <div>
+                    <h1 class="text-lg font-bold text-emerald-800 leading-tight">ফার্ম ম্যানেজার প্রো</h1>
+                    <p class="text-[10px] text-slate-500 font-bold">প্রিমিয়াম ডাটা ম্যানেজমেন্ট</p>
                 </div>
+            </div>
 
-                <div class="flex items-center gap-3">
-                    <button onclick="downloadPDF()" class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg flex items-center gap-2 transition-all transform active:scale-95 shadow-sm font-bold text-sm">
-                        <span>📥</span> PDF ডাউনলোড
-                    </button>
-
-                    <div class="flex items-center bg-slate-100 p-1 rounded-xl border border-slate-200">
-                        <select id="batch-selector" onchange="switchBatch()" class="bg-transparent text-emerald-700 font-bold text-sm py-1 px-2 border-0 focus:ring-0 cursor-pointer">
-                            <!-- Batches auto-load -->
-                        </select>
-                        <button onclick="createNewBatch()" class="ml-1 bg-emerald-600 text-white w-7 h-7 rounded-lg hover:bg-emerald-700 flex items-center justify-center font-bold">+</button>
-                    </div>
+            <div class="flex items-center gap-3">
+                <button onclick="downloadHighResPDF()" class="bg-indigo-600 hover:bg-indigo-700 text-white px-5 py-2 rounded-lg flex items-center gap-2 transition-all shadow-lg font-bold text-sm">
+                    📥 ডাউনলোড PDF (HD)
+                </button>
+                <div class="flex items-center bg-slate-100 p-1 rounded-xl border border-slate-200">
+                    <select id="batch-selector" onchange="switchBatch()" class="bg-transparent text-emerald-700 font-bold text-sm py-1 px-2 border-0 focus:ring-0">
+                    </select>
                 </div>
             </div>
         </div>
     </nav>
 
-    <!-- Main Content Area to Export -->
-    <div id="report-content" class="p-2 sm:p-4">
-        <main class="max-w-7xl mx-auto space-y-6">
+    <div id="capture-area" class="p-4 max-w-7xl mx-auto space-y-6">
+        
+        <!-- Dashboard Header for PDF -->
+        <div id="pdf-header" class="hidden text-center pb-6 border-b-2 border-emerald-100">
+            <h1 class="text-2xl font-black text-slate-800">পোল্ট্রি ফার্ম ম্যানেজমেন্ট রিপোর্ট</h1>
+            <p id="pdf-batch-name" class="text-emerald-600 font-bold"></p>
+            <p id="pdf-timestamp" class="text-slate-400 text-xs mt-1"></p>
+        </div>
 
-            <!-- PDF Header (Hidden in UI) -->
-            <div id="pdf-header" class="hidden text-center border-b-2 border-emerald-500 pb-4 mb-6">
-                <h1 class="text-2xl font-bold text-slate-800">পোল্ট্রি ফার্ম ম্যানেজমেন্ট রিপোর্ট</h1>
-                <div class="flex justify-between mt-4 px-4 text-sm text-slate-600">
-                    <span id="pdf-batch-info"></span>
-                    <span id="pdf-date-info"></span>
+        <!-- KPI Cards -->
+        <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
+            <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-100 border-l-4 border-emerald-500">
+                <p class="text-slate-500 text-[10px] font-bold uppercase tracking-wider">মোট আয়</p>
+                <h3 class="text-2xl font-black text-emerald-600" id="kpi-income">৳ ০</h3>
+            </div>
+            <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-100 border-l-4 border-rose-500">
+                <p class="text-slate-500 text-[10px] font-bold uppercase tracking-wider">মোট ব্যয়</p>
+                <h3 class="text-2xl font-black text-rose-600" id="kpi-expense">৳ ০</h3>
+            </div>
+            <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-100 border-l-4 border-blue-500">
+                <p class="text-slate-500 text-[10px] font-bold uppercase tracking-wider">লাভ/ক্ষতি</p>
+                <h3 class="text-2xl font-black text-slate-700" id="kpi-profit">৳ ০</h3>
+            </div>
+            <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-100 border-l-4 border-amber-500">
+                <p class="text-slate-500 text-[10px] font-bold uppercase tracking-wider">বর্তমান স্টক</p>
+                <h3 class="text-2xl font-black text-amber-600" id="kpi-stock">০ টি</h3>
+            </div>
+        </div>
+
+        <!-- Entry Form (Hidden in PDF) -->
+        <section class="bg-white rounded-2xl shadow-sm border border-slate-200 no-print">
+            <div class="bg-slate-50 px-5 py-3 border-b border-slate-200 flex justify-between items-center">
+                <h3 class="font-bold text-slate-700 text-sm">ডাটা এন্ট্রি</h3>
+                <div class="flex bg-slate-200 p-1 rounded-xl">
+                    <button onclick="setTab('expense')" id="tab-expense" class="tab-btn active px-4 py-1.5 rounded-lg text-[11px] font-bold transition-all">ব্যয়</button>
+                    <button onclick="setTab('income')" id="tab-income" class="tab-btn px-4 py-1.5 rounded-lg text-[11px] font-bold transition-all">আয়</button>
+                    <button onclick="setTab('stock')" id="tab-stock" class="tab-btn px-4 py-1.5 rounded-lg text-[11px] font-bold transition-all">স্টক</button>
+                </div>
+            </div>
+            <div class="p-6">
+                <form id="entry-form" class="grid grid-cols-1 sm:grid-cols-3 lg:grid-cols-6 gap-4 items-end">
+                    <div class="space-y-1">
+                        <label class="text-[10px] font-bold text-slate-400 uppercase">তারিখ</label>
+                        <input type="date" id="f-date" class="w-full px-3 py-2 rounded-lg bg-slate-50 border border-slate-200 text-sm">
+                    </div>
+                    <div class="space-y-1">
+                        <label class="text-[10px] font-bold text-slate-400 uppercase">বিবরণ</label>
+                        <select id="f-cat" class="w-full px-3 py-2 rounded-lg bg-slate-50 border border-slate-200 text-sm font-medium"></select>
+                    </div>
+                    <div class="space-y-1">
+                        <label class="text-[10px] font-bold text-slate-400 uppercase">পরিমাণ</label>
+                        <input type="number" id="f-qty" oninput="autoCalc()" placeholder="০" class="w-full px-3 py-2 rounded-lg bg-slate-50 border border-slate-200 text-sm font-bold">
+                    </div>
+                    <div class="space-y-1" id="div-rate">
+                        <label class="text-[10px] font-bold text-slate-400 uppercase">দর (টাকা)</label>
+                        <input type="number" id="f-rate" oninput="autoCalc()" placeholder="০" class="w-full px-3 py-2 rounded-lg bg-slate-50 border border-slate-200 text-sm font-bold">
+                    </div>
+                    <div class="space-y-1" id="div-total">
+                        <label class="text-[10px] font-bold text-slate-400 uppercase">মোট টাকা</label>
+                        <input type="number" id="f-total" readonly class="w-full px-3 py-2 rounded-lg bg-emerald-50 border border-emerald-100 text-sm font-black text-emerald-700">
+                    </div>
+                    <button type="button" onclick="saveEntry()" class="bg-emerald-600 text-white font-bold py-2 rounded-lg hover:bg-emerald-700 shadow-md text-sm">সেভ করুন</button>
+                </form>
+            </div>
+        </section>
+
+        <!-- Main Content Layout -->
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <!-- Table Section -->
+            <div class="lg:col-span-2 bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+                <div class="px-5 py-4 bg-slate-50 border-b border-slate-200">
+                    <h3 class="font-bold text-sm text-slate-700">লেনদেনের বিস্তারিত তালিকা</h3>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-xs text-left">
+                        <thead class="bg-slate-50 text-slate-500 border-b border-slate-200 font-bold">
+                            <tr>
+                                <th class="px-5 py-4">তারিখ</th>
+                                <th class="px-5 py-4">বিবরণ</th>
+                                <th class="px-5 py-4 text-center">পরিমাণ</th>
+                                <th class="px-5 py-4 text-right">দর</th>
+                                <th class="px-5 py-4 text-right">মোট টাকা</th>
+                                <th class="px-5 py-4 text-center no-print">অ্যাকশন</th>
+                            </tr>
+                        </thead>
+                        <tbody id="transaction-body" class="divide-y divide-slate-100"></tbody>
+                    </table>
                 </div>
             </div>
 
-            <!-- KPI Summary Cards -->
-            <div class="grid grid-cols-2 lg:grid-cols-4 gap-3">
-                <div class="bg-white p-4 rounded-xl shadow-sm border-l-4 border-emerald-500">
-                    <p class="text-slate-500 text-[10px] font-bold uppercase">মোট আয়</p>
-                    <h3 class="text-xl font-bold text-emerald-600" id="kpi-income">৳ ০</h3>
+            <!-- Summary Chart Section -->
+            <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
+                <h3 class="font-bold text-[11px] text-slate-400 uppercase mb-6">আর্থিক সামারি চার্ট</h3>
+                <div class="chart-container">
+                    <canvas id="financeChart"></canvas>
                 </div>
-                <div class="bg-white p-4 rounded-xl shadow-sm border-l-4 border-rose-500">
-                    <p class="text-slate-500 text-[10px] font-bold uppercase">মোট ব্যয়</p>
-                    <h3 class="text-xl font-bold text-rose-600" id="kpi-expense">৳ ০</h3>
-                </div>
-                <div class="bg-white p-4 rounded-xl shadow-sm border-l-4 border-blue-500">
-                    <p class="text-slate-500 text-[10px] font-bold uppercase">লাভ/ক্ষতি</p>
-                    <h3 class="text-xl font-bold text-slate-700" id="kpi-profit">৳ ০</h3>
-                </div>
-                <div class="bg-white p-4 rounded-xl shadow-sm border-l-4 border-amber-500">
-                    <p class="text-slate-500 text-[10px] font-bold uppercase">বর্তমান স্টক</p>
-                    <h3 class="text-xl font-bold text-amber-600" id="kpi-stock">০ টি</h3>
-                </div>
-            </div>
-
-            <!-- Input Form (no-print) -->
-            <section class="bg-white rounded-xl shadow-sm border border-slate-200 no-print overflow-hidden">
-                <div class="bg-slate-50 px-4 py-3 border-b border-slate-200 flex flex-wrap justify-between items-center gap-3">
-                    <h3 class="font-bold text-slate-700 text-sm">📝 ডাটা এন্ট্রি: <span id="form-batch-badge" class="text-emerald-600"></span></h3>
-                    <div class="flex bg-slate-200 p-1 rounded-lg">
-                        <button onclick="setTab('expense')" id="tab-expense" class="tab-btn active px-3 py-1 rounded-md text-[11px] transition-all">ব্যয়</button>
-                        <button onclick="setTab('income')" id="tab-income" class="tab-btn px-3 py-1 rounded-md text-[11px] transition-all">আয়</button>
-                        <button onclick="setTab('stock')" id="tab-stock" class="tab-btn px-3 py-1 rounded-md text-[11px] transition-all">স্টক</button>
+                <div class="mt-8 space-y-3">
+                    <div class="flex justify-between items-center text-xs">
+                        <span class="text-slate-500">আয় হার:</span>
+                        <span id="income-percent" class="font-bold text-emerald-600">০%</span>
                     </div>
-                </div>
-                <div class="p-4">
-                    <form id="entry-form" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 items-end">
-                        <div class="space-y-1">
-                            <label class="text-[10px] font-bold text-slate-400 uppercase">তারিখ</label>
-                            <input type="date" id="f-date" class="w-full px-3 py-2 rounded-lg bg-slate-50 border border-slate-200 text-sm">
-                        </div>
-                        <div class="space-y-1">
-                            <label class="text-[10px] font-bold text-slate-400 uppercase">বিবরণ</label>
-                            <select id="f-cat" class="w-full px-3 py-2 rounded-lg bg-slate-50 border border-slate-200 text-sm">
-                                <!-- Dynamic options -->
-                            </select>
-                        </div>
-                        <div class="space-y-1">
-                            <label class="text-[10px] font-bold text-slate-400 uppercase" id="lbl-qty">পরিমাণ</label>
-                            <input type="number" id="f-qty" oninput="calculateTotal()" placeholder="০" class="w-full px-3 py-2 rounded-lg bg-slate-50 border border-slate-200 text-sm">
-                        </div>
-                        <div class="space-y-1" id="div-amt">
-                            <label class="text-[10px] font-bold text-slate-400 uppercase">টাকা</label>
-                            <input type="number" id="f-amt" placeholder="০" class="w-full px-3 py-2 rounded-lg bg-slate-50 border border-slate-200 text-sm font-bold text-emerald-700">
-                        </div>
-                        <div>
-                            <button type="button" onclick="saveEntry()" class="w-full bg-emerald-600 text-white font-bold py-2 rounded-lg hover:bg-emerald-700 transition-colors shadow-sm text-sm">সেভ করুন</button>
-                        </div>
-                    </form>
-                </div>
-            </section>
-
-            <!-- Analysis Grid -->
-            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                <!-- Chart Card -->
-                <div class="bg-white p-5 rounded-xl shadow-sm border border-slate-200">
-                    <h3 class="font-bold text-sm mb-4 flex items-center gap-2">
-                        <span class="w-2 h-2 bg-emerald-500 rounded-full"></span> আর্থিক সামারি
-                    </h3>
-                    <div class="chart-container">
-                        <canvas id="financeChart"></canvas>
-                    </div>
-                </div>
-
-                <!-- Table Card -->
-                <div class="lg:col-span-2 bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
-                    <div class="px-5 py-3 bg-slate-50 border-b border-slate-200 flex justify-between items-center">
-                        <h3 class="font-bold text-sm">লেনদেন হিস্ট্রি</h3>
-                        <select id="table-filter" onchange="refreshUI()" class="no-print text-[10px] border border-slate-300 rounded px-2 py-1 bg-white">
-                            <option value="all">সব রেকর্ড</option>
-                            <option value="expense">ব্যয় তালিকা</option>
-                            <option value="income">আয় তালিকা</option>
-                            <option value="stock">স্টক আপডেট</option>
-                        </select>
-                    </div>
-                    <div class="overflow-x-auto custom-scrollbar">
-                        <table class="w-full text-xs text-left">
-                            <thead class="bg-slate-50 text-slate-500 border-b border-slate-200">
-                                <tr>
-                                    <th class="px-5 py-3 font-bold">তারিখ</th>
-                                    <th class="px-5 py-3 font-bold">বিবরণ</th>
-                                    <th class="px-5 py-3 font-bold text-right">পরিমাণ/টাকা</th>
-                                    <th class="px-5 py-3 font-bold text-center no-print">অ্যাকশন</th>
-                                </tr>
-                            </thead>
-                            <tbody id="transaction-body" class="divide-y divide-slate-100">
-                                <!-- Data rows -->
-                            </tbody>
-                        </table>
+                    <div class="w-full bg-slate-100 h-1.5 rounded-full overflow-hidden">
+                        <div id="income-bar" class="bg-emerald-500 h-full transition-all duration-1000" style="width: 0%"></div>
                     </div>
                 </div>
             </div>
-        </main>
+        </div>
     </div>
 
     <script>
-        // Core State
         const STATE = {
-            batches: JSON.parse(localStorage.getItem('poultry_batches')) || ['Batch-01'],
-            activeBatch: localStorage.getItem('poultry_active') || 'Batch-01',
-            entries: JSON.parse(localStorage.getItem('poultry_data')) || [],
+            batches: JSON.parse(localStorage.getItem('p_batches_v3')) || ['Batch-01'],
+            activeBatch: localStorage.getItem('p_active_v3') || 'Batch-01',
+            entries: JSON.parse(localStorage.getItem('p_data_v3')) || [],
             currentTab: 'expense'
         };
 
         let myChart = null;
 
-        // Init
         window.onload = () => {
             document.getElementById('f-date').valueAsDate = new Date();
             updateBatchList();
@@ -216,20 +189,9 @@
             el.value = STATE.activeBatch;
         }
 
-        function createNewBatch() {
-            const name = prompt("নতুন ব্যাচের নাম দিন (যেমন: Batch-02):");
-            if (name && !STATE.batches.includes(name)) {
-                STATE.batches.push(name);
-                STATE.activeBatch = name;
-                saveToDisk();
-                updateBatchList();
-                refreshUI();
-            }
-        }
-
         function switchBatch() {
             STATE.activeBatch = document.getElementById('batch-selector').value;
-            localStorage.setItem('poultry_active', STATE.activeBatch);
+            localStorage.setItem('p_active_v3', STATE.activeBatch);
             refreshUI();
         }
 
@@ -239,152 +201,146 @@
             document.getElementById(`tab-${tab}`).classList.add('active');
             
             const cat = document.getElementById('f-cat');
-            const amtDiv = document.getElementById('div-amt');
+            const rateDiv = document.getElementById('div-rate');
+            const totalDiv = document.getElementById('div-total');
             
             if(tab === 'expense') {
-                cat.innerHTML = `<option value="বাচ্চা ক্রয়">বাচ্চা ক্রয়</option><option value="খাবার">খাবার</option><option value="ঔষধ/ভ্যাকসিন">ঔষধ/ভ্যাকসিন</option><option value="অন্যান্য খরচ">অন্যান্য খরচ</option>`;
-                amtDiv.style.display = 'block';
+                cat.innerHTML = `<option value="খাবার">খাবার</option><option value="বাচ্চা">বাচ্চা</option><option value="ঔষধ">ঔষধ</option><option value="লেবার">লেবার</option><option value="অন্যান্য">অন্যান্য খরচ</option>`;
+                rateDiv.style.display = 'block';
+                totalDiv.style.display = 'block';
             } else if(tab === 'income') {
                 cat.innerHTML = `<option value="মুরগি বিক্রি">মুরগি বিক্রি</option><option value="ডিম বিক্রি">ডিম বিক্রি</option><option value="সার বিক্রি">সার বিক্রি</option>`;
-                amtDiv.style.display = 'block';
+                rateDiv.style.display = 'block';
+                totalDiv.style.display = 'block';
             } else {
-                cat.innerHTML = `<option value="স্টক ইন">স্টক ইন (নতুন বাচ্চা)</option><option value="মৃত্যু">মৃত্যু (ক্ষতি)</option>`;
-                amtDiv.style.display = 'none';
+                cat.innerHTML = `<option value="স্টক ইন">স্টক ইন (+)</option><option value="মৃত্যু">মৃত্যু (-)</option>`;
+                rateDiv.style.display = 'none';
+                totalDiv.style.display = 'none';
             }
+            autoCalc();
+        }
+
+        function autoCalc() {
+            const qty = parseFloat(document.getElementById('f-qty').value) || 0;
+            const rate = parseFloat(document.getElementById('f-rate').value) || 0;
+            document.getElementById('f-total').value = (qty * rate) || '';
         }
 
         function saveEntry() {
             const qty = parseFloat(document.getElementById('f-qty').value) || 0;
-            const amt = parseFloat(document.getElementById('f-amt').value) || 0;
+            const rate = parseFloat(document.getElementById('f-rate').value) || 0;
             
-            if(qty <= 0 && STATE.currentTab === 'stock') return alert('সঠিক পরিমাণ দিন');
+            if(qty <= 0) return;
 
-            const entry = {
+            STATE.entries.push({
                 id: Date.now(),
                 batch: STATE.activeBatch,
                 tab: STATE.currentTab,
                 date: document.getElementById('f-date').value,
                 cat: document.getElementById('f-cat').value,
                 qty: qty,
-                amt: amt
-            };
+                rate: rate,
+                total: STATE.currentTab === 'stock' ? 0 : (qty * rate)
+            });
 
-            STATE.entries.push(entry);
-            saveToDisk();
-            document.getElementById('entry-form').reset();
-            document.getElementById('f-date').valueAsDate = new Date();
+            localStorage.setItem('p_data_v3', JSON.stringify(STATE.entries));
+            document.getElementById('f-qty').value = '';
+            document.getElementById('f-rate').value = '';
+            autoCalc();
             refreshUI();
         }
 
         function deleteEntry(id) {
-            if(confirm('আপনি কি এই ডাটাটি ডিলিট করতে চান?')) {
-                STATE.entries = STATE.entries.filter(e => e.id !== id);
-                saveToDisk();
-                refreshUI();
-            }
-        }
-
-        function saveToDisk() {
-            localStorage.setItem('poultry_batches', JSON.stringify(STATE.batches));
-            localStorage.setItem('poultry_data', JSON.stringify(STATE.entries));
+            STATE.entries = STATE.entries.filter(e => e.id !== id);
+            localStorage.setItem('p_data_v3', JSON.stringify(STATE.entries));
+            refreshUI();
         }
 
         function refreshUI() {
-            document.getElementById('form-batch-badge').innerText = STATE.activeBatch;
-            const currentData = STATE.entries.filter(e => e.batch === STATE.activeBatch);
-            const filter = document.getElementById('table-filter').value;
-            
-            let totalIn = 0, totalOut = 0, stock = 0;
-            
-            currentData.forEach(e => {
-                if(e.tab === 'income') totalIn += e.amt;
-                if(e.tab === 'expense') totalOut += e.amt;
-                if(e.tab === 'stock') {
-                    stock += (e.cat === 'স্টক ইন' ? e.qty : -e.qty);
-                }
+            const data = STATE.entries.filter(e => e.batch === STATE.activeBatch);
+            let inc = 0, exp = 0, stock = 0;
+
+            data.forEach(e => {
+                if(e.tab === 'income') inc += e.total;
+                if(e.tab === 'expense') exp += e.total;
+                if(e.tab === 'stock') stock += (e.cat === 'স্টক ইন' ? e.qty : -e.qty);
             });
 
-            document.getElementById('kpi-income').innerText = `৳ ${totalIn.toLocaleString()}`;
-            document.getElementById('kpi-expense').innerText = `৳ ${totalOut.toLocaleString()}`;
-            document.getElementById('kpi-profit').innerText = `৳ ${(totalIn - totalOut).toLocaleString()}`;
+            document.getElementById('kpi-income').innerText = `৳ ${inc.toLocaleString()}`;
+            document.getElementById('kpi-expense').innerText = `৳ ${exp.toLocaleString()}`;
+            document.getElementById('kpi-profit').innerText = `৳ ${(inc - exp).toLocaleString()}`;
             document.getElementById('kpi-stock').innerText = `${stock} টি`;
 
-            // Table Rendering
-            const displayData = filter === 'all' ? currentData : currentData.filter(e => e.tab === filter);
-            const tbody = document.getElementById('transaction-body');
-            tbody.innerHTML = displayData.sort((a,b) => new Date(b.date) - new Date(a.date)).map(e => `
+            // Progress bar calc
+            const totalCash = inc + exp;
+            const incPer = totalCash > 0 ? Math.round((inc / totalCash) * 100) : 0;
+            document.getElementById('income-percent').innerText = `${incPer}%`;
+            document.getElementById('income-bar').style.width = `${incPer}%`;
+
+            document.getElementById('transaction-body').innerHTML = data.sort((a,b) => new Date(b.date) - new Date(a.date)).map(e => `
                 <tr class="hover:bg-slate-50 transition-colors">
-                    <td class="px-5 py-3 font-mono text-[11px]">${e.date}</td>
-                    <td class="px-5 py-3 font-medium">${e.cat}</td>
-                    <td class="px-5 py-3 text-right font-bold ${e.tab === 'income' ? 'text-emerald-600' : e.tab === 'expense' ? 'text-rose-600' : 'text-amber-600'}">
-                        ${e.tab === 'stock' ? e.qty + ' টি' : '৳ ' + e.amt.toLocaleString()}
-                    </td>
-                    <td class="px-5 py-3 text-center no-print">
-                        <button onclick="deleteEntry(${e.id})" class="p-1 hover:bg-rose-50 rounded text-rose-400">🗑️</button>
+                    <td class="px-5 py-4 font-bold text-slate-400">${e.date}</td>
+                    <td class="px-5 py-4 font-bold text-slate-700">${e.cat}</td>
+                    <td class="px-5 py-4 text-center font-bold">${e.qty}</td>
+                    <td class="px-5 py-4 text-right text-slate-500">${e.tab==='stock'?'-':'৳'+e.rate}</td>
+                    <td class="px-5 py-4 text-right font-black ${e.tab==='income'?'text-emerald-600':'text-rose-600'}">${e.tab==='stock'?'-':'৳'+e.total}</td>
+                    <td class="px-5 py-4 text-center no-print">
+                        <button onclick="deleteEntry(${e.id})" class="opacity-30 hover:opacity-100">🗑️</button>
                     </td>
                 </tr>
             `).join('');
 
-            updateChart(totalIn, totalOut);
+            updateChart(inc, exp);
         }
 
         function updateChart(inc, exp) {
             const ctx = document.getElementById('financeChart').getContext('2d');
             if(myChart) myChart.destroy();
-            
             myChart = new Chart(ctx, {
                 type: 'doughnut',
                 data: {
                     labels: ['আয়', 'ব্যয়'],
                     datasets: [{
-                        data: [inc || 1, exp || 0.1], // dummy values to show chart if empty
+                        data: [inc || 1, exp || 0.1],
                         backgroundColor: ['#10b981', '#f43f5e'],
-                        borderWidth: 0,
-                        hoverOffset: 4
+                        borderWidth: 0
                     }]
                 },
-                options: {
-                    maintainAspectRatio: false,
-                    plugins: {
-                        legend: { position: 'bottom', labels: { font: { family: 'Noto Sans Bengali' } } }
-                    },
-                    cutout: '70%'
-                }
+                options: { maintainAspectRatio: false, cutout: '80%', plugins: { legend: { position: 'bottom' } } }
             });
         }
 
-        // PDF Export Fixes
-        async function downloadPDF() {
-            const element = document.getElementById('report-content');
-            const pdfHeader = document.getElementById('pdf-header');
+        function downloadHighResPDF() {
+            const element = document.getElementById('capture-area');
+            const header = document.getElementById('pdf-header');
             
-            // Header for PDF
-            document.getElementById('pdf-batch-info').innerText = `ব্যাচ নং: ${STATE.activeBatch}`;
-            document.getElementById('pdf-date-info').innerText = `তারিখ: ${new Date().toLocaleDateString('bn-BD')}`;
-            
-            pdfHeader.classList.remove('hidden');
+            // Prepare PDF content
+            header.classList.remove('hidden');
+            document.getElementById('pdf-batch-name').innerText = `ব্যাচ: ${STATE.activeBatch}`;
+            document.getElementById('pdf-timestamp').innerText = `রিপোর্ট তৈরি: ${new Date().toLocaleString('bn-BD')}`;
 
             const opt = {
-                margin: 0.3,
-                filename: `Farm_Report_${STATE.activeBatch}.pdf`,
-                image: { type: 'jpeg', quality: 0.98 },
+                margin: [0.3, 0.3],
+                filename: `Poultry_Report_${STATE.activeBatch}.pdf`,
+                image: { type: 'jpeg', quality: 1 }, // Highest quality
                 html2canvas: { 
-                    scale: 2, 
+                    scale: 3, // HD Scaling (3x)
                     useCORS: true,
                     letterRendering: true,
-                    scrollY: 0
+                    logging: false
                 },
-                jsPDF: { unit: 'in', format: 'a4', orientation: 'portrait' }
+                jsPDF: { 
+                    unit: 'in', 
+                    format: 'a4', 
+                    orientation: 'portrait',
+                    compress: false // Disable compression for quality
+                }
             };
 
-            try {
-                // PDF তৈরির সময় বাটনগুলো হাইড করার জন্য CSS ব্যবহার করা হয়েছে
-                await html2pdf().set(opt).from(element).save();
-            } catch (err) {
-                console.error("PDF Error:", err);
-            } finally {
-                pdfHeader.classList.add('hidden');
-            }
+            // Execute PDF generation
+            html2pdf().set(opt).from(element).save().then(() => {
+                header.classList.add('hidden');
+            });
         }
     </script>
 </body>
