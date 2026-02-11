@@ -3,689 +3,388 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>পোল্ট্রি ফার্ম ম্যানেজার প্রো - ব্যাচ ভিত্তিক অটোমেশন</title>
+    <title>পোল্ট্রি ফার্ম ম্যানেজার প্রো - ফিক্সড ভার্সন</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- PDF Generation Library -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Bengali:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     
     <style>
         body {
             font-family: 'Noto Sans Bengali', sans-serif;
-            background-color: #F1F5F9; /* Slate-100 */
+            background-color: #F1F5F9;
         }
         
-        /* Chart Container Strict Sizing */
         .chart-container {
             position: relative;
             width: 100%;
-            max-width: 100%;
-            height: 300px;
-        }
-        @media (min-width: 768px) {
-            .chart-container { height: 320px; }
+            height: 250px;
         }
 
-        /* Custom Scrollbar */
-        .custom-scrollbar::-webkit-scrollbar {
-            height: 6px;
-            width: 6px;
+        .tab-btn.active {
+            background-color: #059669;
+            color: white;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
         }
-        .custom-scrollbar::-webkit-scrollbar-track {
-            background: #f1f1f1;
+
+        /* PDF Styles */
+        #pdf-export-container {
+            background: white;
+        }
+
+        @media print {
+            .no-print { display: none !important; }
+        }
+        
+        /* Custom scrollbar for table */
+        .custom-scrollbar::-webkit-scrollbar {
+            height: 4px;
         }
         .custom-scrollbar::-webkit-scrollbar-thumb {
             background: #cbd5e1;
-            border-radius: 4px;
-        }
-
-        /* Input Styling */
-        .input-field {
-            transition: all 0.2s;
-            border: 1px solid #e2e8f0;
-        }
-        .input-field:focus {
-            border-color: #10b981;
-            box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.1);
-            outline: none;
-        }
-        input[readonly] {
-            background-color: #f8fafc;
-            color: #64748b;
-            cursor: not-allowed;
-        }
-
-        /* Tab Buttons */
-        .tab-btn {
-            transition: all 0.2s ease-in-out;
-        }
-        .tab-btn.active {
-            background-color: #10b981;
-            color: white;
-            font-weight: 600;
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
-        }
-        
-        /* Badge Animations */
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(5px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-        .animate-fade-in {
-            animation: fadeIn 0.3s ease-out forwards;
+            border-radius: 10px;
         }
     </style>
-
-    <!-- Chosen Palette: Emerald (Primary/Income), Rose (Expense), Amber (Stock/Warning), Slate (Neutral) -->
-    <!-- Application Structure Plan:
-         1. Header: Logo, Batch Selector (Global Context).
-         2. KPI Cards: 4 Cards (Income, Expense, Profit, Stock) reacting to Batch Context.
-         3. Unified Input Section:
-            - Tabs for Expense/Income/Stock.
-            - Dynamic Form Fields (Category changes based on tab, Auto-calculation of Amount).
-            - Custom Category Logic.
-         4. Analytics & Data:
-            - Left: Doughnut/Bar Chart.
-            - Right: Data Table with Filters (All/Exp/Inc/Stock).
-         5. Logic: Vanilla JS for state management, localStorage persistence (simulated), and DOM updates.
-    -->
-    <!-- Visualization & Content Choices:
-         - Categories mapped from Source Report (Feed, Medicine, Chicks, Tush, Electricity).
-         - Income Categories (Broiler, Sonali, Eggs, Manure).
-         - Auto-calculation logic implemented for User Experience.
-    -->
-    <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
 </head>
-<body class="text-slate-800 pb-12">
+<body class="text-slate-800 pb-10">
 
-    <!-- Top Navigation & Batch Selector -->
-    <nav class="bg-white shadow-sm border-b border-slate-200 sticky top-0 z-50">
+    <!-- Navbar -->
+    <nav class="bg-white shadow-md border-b border-slate-200 sticky top-0 z-50 no-print">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="flex flex-col md:flex-row justify-between items-center h-auto md:h-20 py-4 md:py-0 gap-4">
+            <div class="flex flex-col md:flex-row justify-between items-center py-3 gap-3">
                 
-                <!-- Logo -->
-                <div class="flex items-center gap-3">
-                    <div class="h-10 w-10 bg-emerald-600 rounded-xl flex items-center justify-center text-2xl shadow-lg shadow-emerald-200">🐔</div>
+                <div class="flex items-center gap-2">
+                    <span class="text-3xl">🐤</span>
                     <div>
-                        <h1 class="text-xl font-bold text-slate-800 leading-tight">পোল্ট্রি ফার্ম ম্যানেজার</h1>
-                        <p class="text-xs text-slate-500 font-medium">ব্যাচ ভিত্তিক ডিজিটাল হিসাব খাতা</p>
+                        <h1 class="text-lg font-bold text-emerald-800 leading-tight">ফার্ম ম্যানেজার প্রো</h1>
+                        <p class="text-[10px] text-slate-500 uppercase tracking-wider">ড্যাশবোর্ড ও রিপোর্ট</p>
                     </div>
                 </div>
 
-                <!-- Batch Context Selector -->
-                <div class="flex items-center bg-slate-100 p-1.5 rounded-xl border border-slate-200">
-                    <span class="px-3 text-xs font-bold text-slate-500 uppercase tracking-wide">সক্রিয় ব্যাচ:</span>
-                    <select id="batch-selector" onchange="switchBatch()" class="bg-white text-emerald-700 font-bold text-sm py-1.5 pl-3 pr-8 rounded-lg border-0 focus:ring-2 focus:ring-emerald-500 cursor-pointer hover:bg-emerald-50 transition">
-                        <option value="Batch-1">ব্যাচ-১</option>
-                        <option value="Batch-2">ব্যাচ-২</option>
-                        <option value="Batch-3">ব্যাচ-৩</option>
-                    </select>
-                    <button onclick="createNewBatch()" class="ml-2 bg-slate-800 text-white p-1.5 rounded-lg hover:bg-slate-700 transition" title="নতুন ব্যাচ তৈরি করুন">
-                        <span class="text-lg leading-none">+</span>
+                <div class="flex items-center gap-3">
+                    <button onclick="downloadPDF()" class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg flex items-center gap-2 transition-all transform active:scale-95 shadow-sm font-bold text-sm">
+                        <span>📥</span> PDF ডাউনলোড
                     </button>
+
+                    <div class="flex items-center bg-slate-100 p-1 rounded-xl border border-slate-200">
+                        <select id="batch-selector" onchange="switchBatch()" class="bg-transparent text-emerald-700 font-bold text-sm py-1 px-2 border-0 focus:ring-0 cursor-pointer">
+                            <!-- Batches auto-load -->
+                        </select>
+                        <button onclick="createNewBatch()" class="ml-1 bg-emerald-600 text-white w-7 h-7 rounded-lg hover:bg-emerald-700 flex items-center justify-center font-bold">+</button>
+                    </div>
                 </div>
             </div>
         </div>
     </nav>
 
-    <!-- Main Content -->
-    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
+    <!-- Main Content Area to Export -->
+    <div id="report-content" class="p-2 sm:p-4">
+        <main class="max-w-7xl mx-auto space-y-6">
 
-        <!-- Section 1: Introduction & Context -->
-        <div class="bg-gradient-to-r from-emerald-600 to-emerald-800 rounded-2xl p-6 text-white shadow-lg relative overflow-hidden">
-            <div class="relative z-10">
-                <h2 class="text-2xl font-bold mb-2">খামারের বর্তমান অবস্থা</h2>
-                <p class="text-emerald-100 opacity-90 max-w-2xl">
-                    নিচে আপনার নির্বাচিত ব্যাচের আর্থিক সারাংশ এবং স্টকের তথ্য দেওয়া হলো। নতুন তথ্য যোগ করতে "ইনপুট প্যানেল" ব্যবহার করুন।
-                </p>
-            </div>
-            <!-- Decorative circle -->
-            <div class="absolute top-0 right-0 -mt-10 -mr-10 w-40 h-40 bg-white opacity-10 rounded-full blur-2xl"></div>
-        </div>
-
-        <!-- Section 2: KPI Cards -->
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            <!-- Income Card -->
-            <div class="bg-white p-5 rounded-2xl shadow-sm border border-emerald-100 hover:shadow-md transition">
-                <div class="flex justify-between items-start mb-4">
-                    <div class="p-2 bg-emerald-50 rounded-lg text-emerald-600 text-xl">💰</div>
-                    <span class="text-xs font-bold text-emerald-600 bg-emerald-50 px-2 py-1 rounded-full">+ আয়</span>
-                </div>
-                <p class="text-slate-500 text-xs font-bold uppercase tracking-wider">মোট ব্যাচ আয়</p>
-                <h3 class="text-2xl font-bold text-slate-800 mt-1" id="kpi-income">৳ ০</h3>
-            </div>
-
-            <!-- Expense Card -->
-            <div class="bg-white p-5 rounded-2xl shadow-sm border border-rose-100 hover:shadow-md transition">
-                <div class="flex justify-between items-start mb-4">
-                    <div class="p-2 bg-rose-50 rounded-lg text-rose-600 text-xl">💸</div>
-                    <span class="text-xs font-bold text-rose-600 bg-rose-50 px-2 py-1 rounded-full">- ব্যয়</span>
-                </div>
-                <p class="text-slate-500 text-xs font-bold uppercase tracking-wider">মোট ব্যাচ খরচ</p>
-                <h3 class="text-2xl font-bold text-slate-800 mt-1" id="kpi-expense">৳ ০</h3>
-            </div>
-
-            <!-- Profit Card -->
-            <div class="bg-white p-5 rounded-2xl shadow-sm border border-indigo-100 hover:shadow-md transition">
-                <div class="flex justify-between items-start mb-4">
-                    <div class="p-2 bg-indigo-50 rounded-lg text-indigo-600 text-xl">📊</div>
-                    <span class="text-xs font-bold text-indigo-600 bg-indigo-50 px-2 py-1 rounded-full">নিট</span>
-                </div>
-                <p class="text-slate-500 text-xs font-bold uppercase tracking-wider">লাভ / ক্ষতি</p>
-                <h3 class="text-2xl font-bold text-slate-800 mt-1" id="kpi-profit">৳ ০</h3>
-            </div>
-
-            <!-- Stock Card -->
-            <div class="bg-white p-5 rounded-2xl shadow-sm border border-amber-100 hover:shadow-md transition">
-                <div class="flex justify-between items-start mb-4">
-                    <div class="p-2 bg-amber-50 rounded-lg text-amber-600 text-xl">🐤</div>
-                    <span class="text-xs font-bold text-amber-600 bg-amber-50 px-2 py-1 rounded-full">স্টক</span>
-                </div>
-                <p class="text-slate-500 text-xs font-bold uppercase tracking-wider">বর্তমান মুরগি</p>
-                <h3 class="text-2xl font-bold text-slate-800 mt-1" id="kpi-stock">০ টি</h3>
-            </div>
-        </div>
-
-        <!-- Section 3: Unified Input Panel -->
-        <section class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
-            <div class="bg-slate-50 px-6 py-4 border-b border-slate-200 flex flex-col md:flex-row justify-between items-center gap-4">
-                <div>
-                    <h3 class="font-bold text-lg text-slate-800 flex items-center gap-2">
-                        📝 নতুন এন্ট্রি যোগ করুন
-                        <span class="text-xs font-normal text-slate-500 bg-white px-2 py-0.5 rounded border border-slate-200" id="form-batch-badge">ব্যাচ-১</span>
-                    </h3>
-                </div>
-                
-                <!-- Entry Type Tabs -->
-                <div class="flex bg-white p-1 rounded-xl border border-slate-200 w-full md:w-auto shadow-sm">
-                    <button onclick="setTab('expense')" id="tab-expense" class="tab-btn active flex-1 px-6 py-2 rounded-lg text-sm transition">খরচ</button>
-                    <button onclick="setTab('income')" id="tab-income" class="tab-btn flex-1 px-6 py-2 rounded-lg text-sm transition">আয়/বিক্রি</button>
-                    <button onclick="setTab('stock')" id="tab-stock" class="tab-btn flex-1 px-6 py-2 rounded-lg text-sm transition">স্টক</button>
+            <!-- PDF Header (Hidden in UI) -->
+            <div id="pdf-header" class="hidden text-center border-b-2 border-emerald-500 pb-4 mb-6">
+                <h1 class="text-2xl font-bold text-slate-800">পোল্ট্রি ফার্ম ম্যানেজমেন্ট রিপোর্ট</h1>
+                <div class="flex justify-between mt-4 px-4 text-sm text-slate-600">
+                    <span id="pdf-batch-info"></span>
+                    <span id="pdf-date-info"></span>
                 </div>
             </div>
 
-            <div class="p-6 md:p-8">
-                <form id="entry-form" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-12 gap-6 items-end">
-                    
-                    <!-- Date -->
-                    <div class="lg:col-span-2 space-y-2">
-                        <label class="text-xs font-bold text-slate-500 uppercase">তারিখ</label>
-                        <input type="date" id="f-date" class="input-field w-full px-4 py-2.5 rounded-xl bg-slate-50">
+            <!-- KPI Summary Cards -->
+            <div class="grid grid-cols-2 lg:grid-cols-4 gap-3">
+                <div class="bg-white p-4 rounded-xl shadow-sm border-l-4 border-emerald-500">
+                    <p class="text-slate-500 text-[10px] font-bold uppercase">মোট আয়</p>
+                    <h3 class="text-xl font-bold text-emerald-600" id="kpi-income">৳ ০</h3>
+                </div>
+                <div class="bg-white p-4 rounded-xl shadow-sm border-l-4 border-rose-500">
+                    <p class="text-slate-500 text-[10px] font-bold uppercase">মোট ব্যয়</p>
+                    <h3 class="text-xl font-bold text-rose-600" id="kpi-expense">৳ ০</h3>
+                </div>
+                <div class="bg-white p-4 rounded-xl shadow-sm border-l-4 border-blue-500">
+                    <p class="text-slate-500 text-[10px] font-bold uppercase">লাভ/ক্ষতি</p>
+                    <h3 class="text-xl font-bold text-slate-700" id="kpi-profit">৳ ০</h3>
+                </div>
+                <div class="bg-white p-4 rounded-xl shadow-sm border-l-4 border-amber-500">
+                    <p class="text-slate-500 text-[10px] font-bold uppercase">বর্তমান স্টক</p>
+                    <h3 class="text-xl font-bold text-amber-600" id="kpi-stock">০ টি</h3>
+                </div>
+            </div>
+
+            <!-- Input Form (no-print) -->
+            <section class="bg-white rounded-xl shadow-sm border border-slate-200 no-print overflow-hidden">
+                <div class="bg-slate-50 px-4 py-3 border-b border-slate-200 flex flex-wrap justify-between items-center gap-3">
+                    <h3 class="font-bold text-slate-700 text-sm">📝 ডাটা এন্ট্রি: <span id="form-batch-badge" class="text-emerald-600"></span></h3>
+                    <div class="flex bg-slate-200 p-1 rounded-lg">
+                        <button onclick="setTab('expense')" id="tab-expense" class="tab-btn active px-3 py-1 rounded-md text-[11px] transition-all">ব্যয়</button>
+                        <button onclick="setTab('income')" id="tab-income" class="tab-btn px-3 py-1 rounded-md text-[11px] transition-all">আয়</button>
+                        <button onclick="setTab('stock')" id="tab-stock" class="tab-btn px-3 py-1 rounded-md text-[11px] transition-all">স্টক</button>
                     </div>
-
-                    <!-- Category -->
-                    <div class="lg:col-span-3 space-y-2">
-                        <label class="text-xs font-bold text-slate-500 uppercase" id="lbl-cat">ক্যাটাগরি</label>
-                        <select id="f-cat" onchange="checkCustomCat()" class="input-field w-full px-4 py-2.5 rounded-xl bg-slate-50 appearance-none">
-                            <!-- Options populated via JS -->
-                        </select>
-                    </div>
-
-                    <!-- Custom Category Input (Hidden by default) -->
-                    <div class="lg:col-span-3 space-y-2 hidden" id="div-custom-cat">
-                        <label class="text-xs font-bold text-indigo-500 uppercase">ক্যাটাগরি নাম লিখুন</label>
-                        <input type="text" id="f-custom-cat" placeholder="উদা: যাতায়াত" class="input-field w-full px-4 py-2.5 rounded-xl bg-indigo-50 border-indigo-200 focus:border-indigo-500">
-                    </div>
-
-                    <!-- Quantity -->
-                    <div class="lg:col-span-2 space-y-2">
-                        <label class="text-xs font-bold text-slate-500 uppercase" id="lbl-qty">পরিমাণ</label>
-                        <input type="number" id="f-qty" oninput="calculateTotal()" step="0.01" placeholder="0" class="input-field w-full px-4 py-2.5 rounded-xl bg-slate-50 text-center font-medium">
-                    </div>
-
-                    <!-- Rate (Unit Price) -->
-                    <div class="lg:col-span-2 space-y-2" id="div-rate">
-                        <label class="text-xs font-bold text-slate-500 uppercase">দর (৳)</label>
-                        <input type="number" id="f-rate" oninput="calculateTotal()" step="0.01" placeholder="0" class="input-field w-full px-4 py-2.5 rounded-xl bg-slate-50 text-center font-medium">
-                    </div>
-
-                    <!-- Total Amount (Auto Calc) -->
-                    <div class="lg:col-span-3 space-y-2" id="div-amt">
-                        <label class="text-xs font-bold text-slate-500 uppercase">মোট টাকা</label>
-                        <div class="relative">
-                            <span class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 font-bold">৳</span>
-                            <input type="number" id="f-amt" placeholder="0" readonly class="input-field w-full pl-8 pr-4 py-2.5 rounded-xl bg-slate-100 text-slate-800 font-bold border-slate-200">
+                </div>
+                <div class="p-4">
+                    <form id="entry-form" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 items-end">
+                        <div class="space-y-1">
+                            <label class="text-[10px] font-bold text-slate-400 uppercase">তারিখ</label>
+                            <input type="date" id="f-date" class="w-full px-3 py-2 rounded-lg bg-slate-50 border border-slate-200 text-sm">
                         </div>
-                    </div>
-
-                    <!-- Description/Note -->
-                    <div class="lg:col-span-12 space-y-2" id="div-desc">
-                        <label class="text-xs font-bold text-slate-500 uppercase" id="lbl-desc">বিবরণ / নোট</label>
-                        <input type="text" id="f-desc" placeholder="বিস্তারিত বিবরণ লিখুন (ঐচ্ছিক)" class="input-field w-full px-4 py-2.5 rounded-xl bg-slate-50">
-                    </div>
-
-                    <!-- Submit Button -->
-                    <div class="lg:col-span-12 mt-2">
-                        <button type="button" onclick="saveEntry()" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3.5 rounded-xl shadow-lg shadow-emerald-200 transition transform active:scale-[0.99] flex items-center justify-center gap-2">
-                            <span class="text-lg">💾</span> ডাটা সেভ করুন
-                        </button>
-                    </div>
-                </form>
-            </div>
-        </section>
-
-        <!-- Section 4: Visuals & Data Table -->
-        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
-            
-            <!-- Left: Charts -->
-            <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 flex flex-col">
-                <h3 class="text-lg font-bold text-slate-800 mb-6 flex items-center gap-2">
-                    📉 আর্থিক বিশ্লেষণ
-                </h3>
-                <div class="chart-container flex-grow">
-                    <canvas id="financeChart"></canvas>
+                        <div class="space-y-1">
+                            <label class="text-[10px] font-bold text-slate-400 uppercase">বিবরণ</label>
+                            <select id="f-cat" class="w-full px-3 py-2 rounded-lg bg-slate-50 border border-slate-200 text-sm">
+                                <!-- Dynamic options -->
+                            </select>
+                        </div>
+                        <div class="space-y-1">
+                            <label class="text-[10px] font-bold text-slate-400 uppercase" id="lbl-qty">পরিমাণ</label>
+                            <input type="number" id="f-qty" oninput="calculateTotal()" placeholder="০" class="w-full px-3 py-2 rounded-lg bg-slate-50 border border-slate-200 text-sm">
+                        </div>
+                        <div class="space-y-1" id="div-amt">
+                            <label class="text-[10px] font-bold text-slate-400 uppercase">টাকা</label>
+                            <input type="number" id="f-amt" placeholder="০" class="w-full px-3 py-2 rounded-lg bg-slate-50 border border-slate-200 text-sm font-bold text-emerald-700">
+                        </div>
+                        <div>
+                            <button type="button" onclick="saveEntry()" class="w-full bg-emerald-600 text-white font-bold py-2 rounded-lg hover:bg-emerald-700 transition-colors shadow-sm text-sm">সেভ করুন</button>
+                        </div>
+                    </form>
                 </div>
-                <div class="mt-6 p-4 bg-slate-50 rounded-xl border border-slate-100">
-                    <p class="text-xs text-slate-500 text-center leading-relaxed">
-                        এই চার্টটি আপনার বর্তমান ব্যাচের আয় এবং ব্যয়ের তুলনা দেখাচ্ছে। লাভের পরিমাণ বাড়াতে খরচ নিয়ন্ত্রণে রাখুন।
-                    </p>
-                </div>
-            </div>
+            </section>
 
-            <!-- Right: Transaction History -->
-            <div class="lg:col-span-2 bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden flex flex-col">
-                <div class="px-6 py-5 border-b border-slate-200 flex flex-col sm:flex-row justify-between items-center gap-4 bg-slate-50">
-                    <h3 class="text-lg font-bold text-slate-800">লেনদেন ইতিহাস</h3>
-                    
-                    <!-- Filter -->
-                    <div class="flex items-center gap-2 bg-white px-3 py-1.5 rounded-lg border border-slate-200 shadow-sm">
-                        <span class="text-xs font-bold text-slate-400 uppercase">ফিল্টার:</span>
-                        <select id="table-filter" onchange="renderTable()" class="text-sm font-bold text-slate-600 bg-transparent border-none focus:ring-0 cursor-pointer">
-                            <option value="all">সবগুলো</option>
-                            <option value="expense">শুধুমাত্র খরচ</option>
-                            <option value="income">শুধুমাত্র আয়</option>
-                            <option value="stock">স্টক</option>
+            <!-- Analysis Grid -->
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <!-- Chart Card -->
+                <div class="bg-white p-5 rounded-xl shadow-sm border border-slate-200">
+                    <h3 class="font-bold text-sm mb-4 flex items-center gap-2">
+                        <span class="w-2 h-2 bg-emerald-500 rounded-full"></span> আর্থিক সামারি
+                    </h3>
+                    <div class="chart-container">
+                        <canvas id="financeChart"></canvas>
+                    </div>
+                </div>
+
+                <!-- Table Card -->
+                <div class="lg:col-span-2 bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+                    <div class="px-5 py-3 bg-slate-50 border-b border-slate-200 flex justify-between items-center">
+                        <h3 class="font-bold text-sm">লেনদেন হিস্ট্রি</h3>
+                        <select id="table-filter" onchange="refreshUI()" class="no-print text-[10px] border border-slate-300 rounded px-2 py-1 bg-white">
+                            <option value="all">সব রেকর্ড</option>
+                            <option value="expense">ব্যয় তালিকা</option>
+                            <option value="income">আয় তালিকা</option>
+                            <option value="stock">স্টক আপডেট</option>
                         </select>
                     </div>
-                </div>
-
-                <div class="flex-grow overflow-x-auto custom-scrollbar">
-                    <table class="w-full text-left border-collapse">
-                        <thead class="bg-white sticky top-0 z-10 shadow-sm">
-                            <tr>
-                                <th class="px-6 py-4 text-xs font-bold text-slate-400 uppercase tracking-wider">তারিখ</th>
-                                <th class="px-6 py-4 text-xs font-bold text-slate-400 uppercase tracking-wider">বিবরণ</th>
-                                <th class="px-6 py-4 text-xs font-bold text-slate-400 uppercase tracking-wider text-center">পরিমাণ</th>
-                                <th class="px-6 py-4 text-xs font-bold text-slate-400 uppercase tracking-wider text-right">টাকা</th>
-                                <th class="px-6 py-4 text-xs font-bold text-slate-400 uppercase tracking-wider text-center">অ্যাকশন</th>
-                            </tr>
-                        </thead>
-                        <tbody id="transaction-body" class="divide-y divide-slate-100 text-sm">
-                            <!-- Rows will be injected here -->
-                        </tbody>
-                    </table>
-                    
-                    <!-- Empty State -->
-                    <div id="empty-state" class="hidden flex flex-col items-center justify-center py-12 text-center">
-                        <div class="h-16 w-16 bg-slate-50 rounded-full flex items-center justify-center text-3xl mb-4">📭</div>
-                        <p class="text-slate-500 font-medium">এই ফিল্টারে কোনো তথ্য পাওয়া যায়নি।</p>
-                        <p class="text-slate-400 text-xs mt-1">নতুন এন্ট্রি যোগ করতে উপরের ফর্ম ব্যবহার করুন।</p>
+                    <div class="overflow-x-auto custom-scrollbar">
+                        <table class="w-full text-xs text-left">
+                            <thead class="bg-slate-50 text-slate-500 border-b border-slate-200">
+                                <tr>
+                                    <th class="px-5 py-3 font-bold">তারিখ</th>
+                                    <th class="px-5 py-3 font-bold">বিবরণ</th>
+                                    <th class="px-5 py-3 font-bold text-right">পরিমাণ/টাকা</th>
+                                    <th class="px-5 py-3 font-bold text-center no-print">অ্যাকশন</th>
+                                </tr>
+                            </thead>
+                            <tbody id="transaction-body" class="divide-y divide-slate-100">
+                                <!-- Data rows -->
+                            </tbody>
+                        </table>
                     </div>
                 </div>
             </div>
-        </div>
+        </main>
+    </div>
 
-    </main>
-
-    <!-- Footer -->
-    <footer class="bg-white border-t border-slate-200 py-8 mt-8">
-        <div class="max-w-7xl mx-auto px-4 text-center">
-            <p class="text-slate-400 text-sm">© ২০২৬ পোল্ট্রি ফার্ম ম্যানেজার | সোর্স রিপোর্ট ভিত্তিক অটোমেশন</p>
-        </div>
-    </footer>
-
-    <!-- JS Logic -->
     <script>
-        // --- State Management ---
-        const APP_STATE = {
-            batches: JSON.parse(localStorage.getItem('batches')) || ['Batch-1', 'Batch-2'],
-            activeBatch: localStorage.getItem('activeBatch') || 'Batch-1',
-            transactions: JSON.parse(localStorage.getItem('transactions')) || [],
+        // Core State
+        const STATE = {
+            batches: JSON.parse(localStorage.getItem('poultry_batches')) || ['Batch-01'],
+            activeBatch: localStorage.getItem('poultry_active') || 'Batch-01',
+            entries: JSON.parse(localStorage.getItem('poultry_data')) || [],
             currentTab: 'expense'
         };
 
-        let chartInstance = null;
+        let myChart = null;
 
-        // --- Initialization ---
-        document.addEventListener('DOMContentLoaded', () => {
+        // Init
+        window.onload = () => {
             document.getElementById('f-date').valueAsDate = new Date();
-            initBatchSelector();
-            setTab('expense'); // Default tab
+            updateBatchList();
+            setTab('expense');
             refreshUI();
-        });
+        };
 
-        // --- Batch Management ---
-        function initBatchSelector() {
-            const selector = document.getElementById('batch-selector');
-            selector.innerHTML = '';
-            APP_STATE.batches.forEach(batch => {
-                const opt = document.createElement('option');
-                opt.value = batch;
-                opt.innerText = batch.replace('-', ' '); // Display 'Batch 1' nicely
-                selector.appendChild(opt);
-            });
-            selector.value = APP_STATE.activeBatch;
-        }
-
-        function switchBatch() {
-            APP_STATE.activeBatch = document.getElementById('batch-selector').value;
-            localStorage.setItem('activeBatch', APP_STATE.activeBatch);
-            refreshUI();
+        function updateBatchList() {
+            const el = document.getElementById('batch-selector');
+            el.innerHTML = STATE.batches.map(b => `<option value="${b}">${b}</option>`).join('');
+            el.value = STATE.activeBatch;
         }
 
         function createNewBatch() {
-            const name = prompt("নতুন ব্যাচের নাম দিন (যেমন: Batch-3):");
-            if (name && !APP_STATE.batches.includes(name)) {
-                APP_STATE.batches.push(name);
-                localStorage.setItem('batches', JSON.stringify(APP_STATE.batches));
-                
-                // Select new batch automatically
-                APP_STATE.activeBatch = name;
-                localStorage.setItem('activeBatch', name);
-                
-                initBatchSelector();
+            const name = prompt("নতুন ব্যাচের নাম দিন (যেমন: Batch-02):");
+            if (name && !STATE.batches.includes(name)) {
+                STATE.batches.push(name);
+                STATE.activeBatch = name;
+                saveToDisk();
+                updateBatchList();
                 refreshUI();
             }
         }
 
-        // --- Input Form Logic ---
+        function switchBatch() {
+            STATE.activeBatch = document.getElementById('batch-selector').value;
+            localStorage.setItem('poultry_active', STATE.activeBatch);
+            refreshUI();
+        }
+
         function setTab(tab) {
-            APP_STATE.currentTab = tab;
-            
-            // UI Toggle
-            document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+            STATE.currentTab = tab;
+            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
             document.getElementById(`tab-${tab}`).classList.add('active');
-
-            // Dynamic Form Adjustment
-            const catSelect = document.getElementById('f-cat');
-            const lblQty = document.getElementById('lbl-qty');
-            const divRate = document.getElementById('div-rate');
-            const divAmt = document.getElementById('div-amt');
-            const divCustom = document.getElementById('div-custom-cat');
-
-            divCustom.classList.add('hidden'); // Hide custom input on tab switch
-
-            if (tab === 'expense') {
-                catSelect.innerHTML = `
-                    <option value="" disabled selected>খরচের খাত নির্বাচন করুন</option>
-                    <optgroup label="প্রধান খরচ">
-                        <option value="খাদ্য">খাদ্য (ফিড)</option>
-                        <option value="ঔষধ">ঔষধ / ভ্যাকসিন</option>
-                        <option value="বাচ্চা">বাচ্চা ক্রয়</option>
-                    </optgroup>
-                    <optgroup label="অন্যান্য">
-                        <option value="তুষ">তুষ / লিটার</option>
-                        <option value="বিদ্যুৎ বিল">বিদ্যুৎ বিল</option>
-                        <option value="মেরামত">মেরামত</option>
-                        <option value="custom">অন্যান্য (নিজে লিখুন)</option>
-                    </optgroup>
-                `;
-                lblQty.innerText = 'পরিমাণ (কেজি/বস্তা/সংখ্যা)';
-                divRate.classList.remove('hidden');
-                divAmt.classList.remove('hidden');
-            } 
-            else if (tab === 'income') {
-                catSelect.innerHTML = `
-                    <option value="" disabled selected>আয়ের উৎস নির্বাচন করুন</option>
-                    <optgroup label="মুরগি বিক্রি">
-                        <option value="ব্রয়লার মুরগি">ব্রয়লার মুরগি</option>
-                        <option value="সোনালী মুরগি">সোনালী মুরগি</option>
-                        <option value="কক মুরগি">কক মুরগি</option>
-                        <option value="দেশি মুরগি">দেশি মুরগি</option>
-                    </optgroup>
-                    <optgroup label="অন্যান্য আয়">
-                        <option value="ডিম">ডিম বিক্রি</option>
-                        <option value="সার">সার বিক্রি (লিটার)</option>
-                        <option value="custom">অন্যান্য (নিজে লিখুন)</option>
-                    </optgroup>
-                `;
-                lblQty.innerText = 'ওজন (কেজি) / সংখ্যা';
-                divRate.classList.remove('hidden');
-                divAmt.classList.remove('hidden');
-            } 
-            else if (tab === 'stock') {
-                catSelect.innerHTML = `
-                    <option value="mortality">মুরগি মারা গেছে (Mortality)</option>
-                    <option value="new_stock">নতুন স্টক যোগ (New Stock)</option>
-                `;
-                lblQty.innerText = 'সংখ্যা (টি)';
-                divRate.classList.add('hidden');
-                divAmt.classList.add('hidden');
-            }
             
-            // Clear fields
-            document.getElementById('f-qty').value = '';
-            document.getElementById('f-rate').value = '';
-            document.getElementById('f-amt').value = '';
-            document.getElementById('f-custom-cat').value = '';
-            document.getElementById('f-desc').value = '';
-        }
-
-        function checkCustomCat() {
-            const val = document.getElementById('f-cat').value;
-            const divCustom = document.getElementById('div-custom-cat');
-            if (val === 'custom') {
-                divCustom.classList.remove('hidden');
-                document.getElementById('f-custom-cat').focus();
+            const cat = document.getElementById('f-cat');
+            const amtDiv = document.getElementById('div-amt');
+            
+            if(tab === 'expense') {
+                cat.innerHTML = `<option value="বাচ্চা ক্রয়">বাচ্চা ক্রয়</option><option value="খাবার">খাবার</option><option value="ঔষধ/ভ্যাকসিন">ঔষধ/ভ্যাকসিন</option><option value="অন্যান্য খরচ">অন্যান্য খরচ</option>`;
+                amtDiv.style.display = 'block';
+            } else if(tab === 'income') {
+                cat.innerHTML = `<option value="মুরগি বিক্রি">মুরগি বিক্রি</option><option value="ডিম বিক্রি">ডিম বিক্রি</option><option value="সার বিক্রি">সার বিক্রি</option>`;
+                amtDiv.style.display = 'block';
             } else {
-                divCustom.classList.add('hidden');
+                cat.innerHTML = `<option value="স্টক ইন">স্টক ইন (নতুন বাচ্চা)</option><option value="মৃত্যু">মৃত্যু (ক্ষতি)</option>`;
+                amtDiv.style.display = 'none';
             }
-        }
-
-        function calculateTotal() {
-            if (APP_STATE.currentTab === 'stock') return;
-            
-            const qty = parseFloat(document.getElementById('f-qty').value) || 0;
-            const rate = parseFloat(document.getElementById('f-rate').value) || 0;
-            const total = qty * rate;
-            
-            document.getElementById('f-amt').value = total > 0 ? total.toFixed(2) : '';
         }
 
         function saveEntry() {
-            const date = document.getElementById('f-date').value;
-            let cat = document.getElementById('f-cat').value;
-            
-            // Handle Custom Category
-            if (cat === 'custom') {
-                cat = document.getElementById('f-custom-cat').value;
-                if (!cat) return alert('দয়া করে ক্যাটাগরি নাম লিখুন');
-            }
-
             const qty = parseFloat(document.getElementById('f-qty').value) || 0;
-            const rate = parseFloat(document.getElementById('f-rate').value) || 0;
             const amt = parseFloat(document.getElementById('f-amt').value) || 0;
-            const desc = document.getElementById('f-desc').value;
-
-            // Validation
-            if (!date || !cat) return alert('তারিখ এবং ক্যাটাগরি আবশ্যক');
-            if (qty <= 0) return alert('সঠিক পরিমাণ দিন');
+            
+            if(qty <= 0 && STATE.currentTab === 'stock') return alert('সঠিক পরিমাণ দিন');
 
             const entry = {
                 id: Date.now(),
-                batchId: APP_STATE.activeBatch,
-                type: APP_STATE.currentTab,
-                date,
-                category: cat,
-                quantity: qty,
-                rate: rate,
-                amount: APP_STATE.currentTab === 'stock' ? 0 : amt, // Stock entries have 0 financial amount here
-                description: desc
+                batch: STATE.activeBatch,
+                tab: STATE.currentTab,
+                date: document.getElementById('f-date').value,
+                cat: document.getElementById('f-cat').value,
+                qty: qty,
+                amt: amt
             };
 
-            APP_STATE.transactions.push(entry);
-            localStorage.setItem('transactions', JSON.stringify(APP_STATE.transactions));
-
+            STATE.entries.push(entry);
+            saveToDisk();
+            document.getElementById('entry-form').reset();
+            document.getElementById('f-date').valueAsDate = new Date();
             refreshUI();
-            
-            // Reset crucial fields only
-            document.getElementById('f-qty').value = '';
-            document.getElementById('f-rate').value = '';
-            document.getElementById('f-amt').value = '';
-            document.getElementById('f-desc').value = '';
         }
 
         function deleteEntry(id) {
-            if(confirm('আপনি কি নিশ্চিত এই এন্ট্রি মুছে ফেলতে চান?')) {
-                APP_STATE.transactions = APP_STATE.transactions.filter(t => t.id !== id);
-                localStorage.setItem('transactions', JSON.stringify(APP_STATE.transactions));
+            if(confirm('আপনি কি এই ডাটাটি ডিলিট করতে চান?')) {
+                STATE.entries = STATE.entries.filter(e => e.id !== id);
+                saveToDisk();
                 refreshUI();
             }
         }
 
-        // --- UI Rendering ---
+        function saveToDisk() {
+            localStorage.setItem('poultry_batches', JSON.stringify(STATE.batches));
+            localStorage.setItem('poultry_data', JSON.stringify(STATE.entries));
+        }
+
         function refreshUI() {
-            // Update Headers
-            document.getElementById('form-batch-badge').innerText = APP_STATE.activeBatch;
-
-            // Filter data for Active Batch
-            const batchData = APP_STATE.transactions.filter(t => t.batchId === APP_STATE.activeBatch);
-
-            // 1. Calculate KPIs
-            let income = 0, expense = 0, stockChange = 0;
+            document.getElementById('form-batch-badge').innerText = STATE.activeBatch;
+            const currentData = STATE.entries.filter(e => e.batch === STATE.activeBatch);
+            const filter = document.getElementById('table-filter').value;
             
-            batchData.forEach(t => {
-                if (t.type === 'income') income += t.amount;
-                if (t.type === 'expense') expense += t.amount;
-                if (t.type === 'stock') {
-                    if (t.category === 'mortality') stockChange -= t.quantity;
-                    else if (t.category === 'new_stock') stockChange += t.quantity;
+            let totalIn = 0, totalOut = 0, stock = 0;
+            
+            currentData.forEach(e => {
+                if(e.tab === 'income') totalIn += e.amt;
+                if(e.tab === 'expense') totalOut += e.amt;
+                if(e.tab === 'stock') {
+                    stock += (e.cat === 'স্টক ইন' ? e.qty : -e.qty);
                 }
             });
 
-            const profit = income - expense;
+            document.getElementById('kpi-income').innerText = `৳ ${totalIn.toLocaleString()}`;
+            document.getElementById('kpi-expense').innerText = `৳ ${totalOut.toLocaleString()}`;
+            document.getElementById('kpi-profit').innerText = `৳ ${(totalIn - totalOut).toLocaleString()}`;
+            document.getElementById('kpi-stock').innerText = `${stock} টি`;
 
-            // DOM Update KPIs
-            document.getElementById('kpi-income').innerText = `৳ ${income.toLocaleString('bn-BD')}`;
-            document.getElementById('kpi-expense').innerText = `৳ ${expense.toLocaleString('bn-BD')}`;
-            const profitEl = document.getElementById('kpi-profit');
-            profitEl.innerText = `৳ ${profit.toLocaleString('bn-BD')}`;
-            profitEl.className = `text-2xl font-bold mt-1 ${profit >= 0 ? 'text-emerald-600' : 'text-rose-600'}`;
-            document.getElementById('kpi-stock').innerText = `${stockChange} টি`;
-
-            // 2. Render Table
-            renderTable(batchData);
-
-            // 3. Render Chart
-            renderChart(income, expense);
-        }
-
-        function renderTable(preFilteredData) {
-            const filterType = document.getElementById('table-filter').value;
-            
-            // If called from selector, we need to refetch batch data
-            let data = preFilteredData;
-            if (!data) {
-                data = APP_STATE.transactions.filter(t => t.batchId === APP_STATE.activeBatch);
-            }
-
-            // Apply Type Filter
-            if (filterType !== 'all') {
-                data = data.filter(t => t.type === filterType);
-            }
-
-            // Sort by Date Descending
-            data.sort((a, b) => new Date(b.date) - new Date(a.date));
-
+            // Table Rendering
+            const displayData = filter === 'all' ? currentData : currentData.filter(e => e.tab === filter);
             const tbody = document.getElementById('transaction-body');
-            const emptyState = document.getElementById('empty-state');
-            tbody.innerHTML = '';
+            tbody.innerHTML = displayData.sort((a,b) => new Date(b.date) - new Date(a.date)).map(e => `
+                <tr class="hover:bg-slate-50 transition-colors">
+                    <td class="px-5 py-3 font-mono text-[11px]">${e.date}</td>
+                    <td class="px-5 py-3 font-medium">${e.cat}</td>
+                    <td class="px-5 py-3 text-right font-bold ${e.tab === 'income' ? 'text-emerald-600' : e.tab === 'expense' ? 'text-rose-600' : 'text-amber-600'}">
+                        ${e.tab === 'stock' ? e.qty + ' টি' : '৳ ' + e.amt.toLocaleString()}
+                    </td>
+                    <td class="px-5 py-3 text-center no-print">
+                        <button onclick="deleteEntry(${e.id})" class="p-1 hover:bg-rose-50 rounded text-rose-400">🗑️</button>
+                    </td>
+                </tr>
+            `).join('');
 
-            if (data.length === 0) {
-                emptyState.classList.remove('hidden');
-            } else {
-                emptyState.classList.add('hidden');
-                data.forEach(t => {
-                    const row = document.createElement('tr');
-                    row.className = 'hover:bg-slate-50 transition border-b border-slate-50 animate-fade-in';
-                    
-                    // Badge Logic
-                    let badgeClass = 'bg-slate-100 text-slate-600';
-                    let amountClass = 'text-slate-600';
-                    let amountPrefix = '৳ ';
-                    
-                    if (t.type === 'expense') {
-                        badgeClass = 'bg-rose-50 text-rose-600 border border-rose-100';
-                        amountClass = 'text-rose-600';
-                    } else if (t.type === 'income') {
-                        badgeClass = 'bg-emerald-50 text-emerald-600 border border-emerald-100';
-                        amountClass = 'text-emerald-600';
-                    } else if (t.type === 'stock') {
-                        badgeClass = 'bg-amber-50 text-amber-600 border border-amber-100';
-                        amountClass = 'text-amber-600';
-                        amountPrefix = '';
-                    }
-
-                    // Format Category Text
-                    let catText = t.category;
-                    if(catText === 'mortality') catText = 'মৃত্যু';
-                    if(catText === 'new_stock') catText = 'নতুন স্টক';
-
-                    row.innerHTML = `
-                        <td class="px-6 py-4 whitespace-nowrap font-mono text-slate-500 text-xs">${t.date}</td>
-                        <td class="px-6 py-4">
-                            <div class="flex flex-col">
-                                <span class="font-bold text-slate-700">${catText}</span>
-                                <span class="text-xs text-slate-400">${t.description || '-'}</span>
-                            </div>
-                        </td>
-                        <td class="px-6 py-4 text-center">
-                            <span class="px-2 py-1 rounded-full text-xs font-bold ${badgeClass}">
-                                ${t.quantity} ${t.rate > 0 ? '× ' + t.rate : ''}
-                            </span>
-                        </td>
-                        <td class="px-6 py-4 text-right font-bold ${amountClass}">
-                            ${t.amount > 0 ? amountPrefix + t.amount.toLocaleString() : '-'}
-                        </td>
-                        <td class="px-6 py-4 text-center">
-                            <button onclick="deleteEntry(${t.id})" class="text-slate-300 hover:text-rose-500 transition" title="মুছে ফেলুন">
-                                🗑️
-                            </button>
-                        </td>
-                    `;
-                    tbody.appendChild(row);
-                });
-            }
+            updateChart(totalIn, totalOut);
         }
 
-        function renderChart(income, expense) {
+        function updateChart(inc, exp) {
             const ctx = document.getElementById('financeChart').getContext('2d');
+            if(myChart) myChart.destroy();
             
-            if (chartInstance) {
-                chartInstance.destroy();
-            }
-
-            chartInstance = new Chart(ctx, {
-                type: 'bar',
+            myChart = new Chart(ctx, {
+                type: 'doughnut',
                 data: {
                     labels: ['আয়', 'ব্যয়'],
                     datasets: [{
-                        label: 'টাকা',
-                        data: [income, expense],
-                        backgroundColor: [
-                            'rgba(16, 185, 129, 0.8)', // Emerald
-                            'rgba(244, 63, 94, 0.8)'   // Rose
-                        ],
-                        borderRadius: 8,
-                        barThickness: 50
+                        data: [inc || 1, exp || 0.1], // dummy values to show chart if empty
+                        backgroundColor: ['#10b981', '#f43f5e'],
+                        borderWidth: 0,
+                        hoverOffset: 4
                     }]
                 },
                 options: {
-                    responsive: true,
                     maintainAspectRatio: false,
                     plugins: {
-                        legend: { display: false }
+                        legend: { position: 'bottom', labels: { font: { family: 'Noto Sans Bengali' } } }
                     },
-                    scales: {
-                        y: {
-                            beginAtZero: true,
-                            grid: { display: true, color: '#f1f5f9' }
-                        },
-                        x: {
-                            grid: { display: false }
-                        }
-                    }
+                    cutout: '70%'
                 }
             });
+        }
+
+        // PDF Export Fixes
+        async function downloadPDF() {
+            const element = document.getElementById('report-content');
+            const pdfHeader = document.getElementById('pdf-header');
+            
+            // Header for PDF
+            document.getElementById('pdf-batch-info').innerText = `ব্যাচ নং: ${STATE.activeBatch}`;
+            document.getElementById('pdf-date-info').innerText = `তারিখ: ${new Date().toLocaleDateString('bn-BD')}`;
+            
+            pdfHeader.classList.remove('hidden');
+
+            const opt = {
+                margin: 0.3,
+                filename: `Farm_Report_${STATE.activeBatch}.pdf`,
+                image: { type: 'jpeg', quality: 0.98 },
+                html2canvas: { 
+                    scale: 2, 
+                    useCORS: true,
+                    letterRendering: true,
+                    scrollY: 0
+                },
+                jsPDF: { unit: 'in', format: 'a4', orientation: 'portrait' }
+            };
+
+            try {
+                // PDF তৈরির সময় বাটনগুলো হাইড করার জন্য CSS ব্যবহার করা হয়েছে
+                await html2pdf().set(opt).from(element).save();
+            } catch (err) {
+                console.error("PDF Error:", err);
+            } finally {
+                pdfHeader.classList.add('hidden');
+            }
         }
     </script>
 </body>
