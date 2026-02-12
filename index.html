@@ -3,308 +3,387 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>পোল্ট্রি খামার ব্যাবস্থাপনা</title>
+    <title>পোল্ট্রি ম্যানেজার - স্মার্ট অ্যাডভাইজার</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Bengali:wght@400;700&display=swap" rel="stylesheet">
     <style>
-        body { font-family: 'Noto Sans Bengali', sans-serif; background-color: #f8fafc; }
-        .tab-active { border-bottom: 3px solid #10b981; color: #10b981; }
+        body { font-family: 'Noto Sans Bengali', sans-serif; background-color: #f0f2f5; }
+        .glass-card { background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.2); }
+        .batch-active { border: 2px solid #059669; background-color: #ecfdf5; }
+        
+        .marquee-container {
+            overflow: hidden;
+            white-space: nowrap;
+            background: #fffbeb;
+            border-bottom: 2px solid #fde68a;
+        }
+        .marquee-content {
+            display: inline-block;
+            padding-left: 100%;
+            animation: marquee 25s linear infinite;
+        }
+        @keyframes marquee {
+            0% { transform: translate(0, 0); }
+            100% { transform: translate(-100%, 0); }
+        }
+        .marquee-content:hover {
+            animation-play-state: paused;
+        }
+
+        /* PDF Styling */
+        #pdf-template {
+            display: none;
+            padding: 40px;
+            background: white;
+            color: black;
+        }
+        .pdf-header { text-align: center; border-bottom: 2px solid #059669; margin-bottom: 20px; padding-bottom: 10px; }
     </style>
 </head>
-<body class="bg-gray-50 min-h-screen pb-24">
+<body class="min-h-screen">
 
-    <!-- Header -->
-    <header class="bg-emerald-600 text-white p-4 shadow-md sticky top-0 z-50">
-        <div class="max-w-md mx-auto flex justify-between items-center">
+    <!-- Top Navigation -->
+    <nav class="bg-emerald-800 text-white p-4 sticky top-0 z-50 shadow-lg">
+        <div class="max-w-6xl mx-auto flex justify-between items-center">
             <div>
-                <h1 class="text-lg font-bold">আমার পোল্ট্রি খামার</h1>
-                <p id="current-date-display" class="text-[10px] opacity-80"></p>
+                <h1 class="text-xl font-bold text-yellow-400">স্মার্ট পোল্ট্রি ম্যানেজার</h1>
+                <p id="active-batch-name" class="text-xs opacity-80">লোড হচ্ছে...</p>
             </div>
-            <div id="day-counter" class="bg-emerald-700 px-3 py-1 rounded-full text-xs font-bold">দিন: ০</div>
-        </div>
-    </header>
-
-    <main class="max-w-md mx-auto p-4 space-y-4">
-        
-        <!-- Summary Cards (Updated for separate Income/Expense) -->
-        <div class="grid grid-cols-2 gap-3">
-            <div class="bg-white p-3 rounded-2xl shadow-sm border-t-4 border-rose-500">
-                <p class="text-gray-500 text-[10px] font-bold uppercase">মোট ব্যয় (খরচ)</p>
-                <h2 id="total-expense" class="text-lg font-bold text-rose-600">৳ ০</h2>
-            </div>
-            <div class="bg-white p-3 rounded-2xl shadow-sm border-t-4 border-emerald-500">
-                <p class="text-gray-500 text-[10px] font-bold uppercase">মোট আয় (বিক্রি)</p>
-                <h2 id="total-income" class="text-lg font-bold text-emerald-600">৳ ০</h2>
-            </div>
-            <div class="bg-emerald-50 p-3 rounded-2xl shadow-sm border border-emerald-100 col-span-2 flex justify-between items-center">
-                <p class="text-gray-700 text-xs font-bold">বর্তমান নিট লাভ/ক্ষতি:</p>
-                <h2 id="total-profit" class="text-xl font-bold text-gray-800">৳ ০</h2>
+            <div class="flex gap-2">
+                <button onclick="downloadPDF()" class="bg-white text-emerald-800 px-3 py-1.5 rounded-lg text-sm font-bold hover:bg-gray-100 transition-all flex items-center gap-1">
+                    <span>📥</span> PDF
+                </button>
+                <button onclick="toggleBatchModal()" class="bg-emerald-700 px-3 py-1.5 rounded-lg text-sm font-bold hover:bg-emerald-600 transition-all flex items-center gap-1">
+                    <span>🔄</span> ব্যাচ
+                </button>
             </div>
         </div>
+    </nav>
 
-        <!-- Mortality & Health Overview -->
-        <div class="bg-white p-4 rounded-2xl shadow-sm border border-gray-100 flex justify-between items-center">
-            <div>
-                <p class="text-gray-500 text-[10px] font-bold uppercase">মৃত মুরগি</p>
-                <h2 id="total-mortality" class="text-lg font-bold text-gray-800">০ টি</h2>
-            </div>
-            <div class="text-right">
-                <button onclick="scrollToHealth()" class="text-emerald-600 text-xs font-bold bg-emerald-50 px-3 py-2 rounded-lg">স্বাস্থ্য চেক করুন 🩺</button>
-            </div>
+    <!-- Smart Advice Scrollbar -->
+    <div class="marquee-container py-2">
+        <div id="advice-bar" class="marquee-content text-emerald-900 font-bold text-sm">
+            লোড হচ্ছে বাচ্চার বয়সের গাইডলাইন...
         </div>
+    </div>
 
-        <!-- Health Box -->
-        <div id="health-section" class="bg-white rounded-2xl shadow-md border-2 border-emerald-50 p-5 space-y-3">
-            <h3 class="font-bold text-gray-800 text-sm flex items-center gap-2">
-                <span>🩺</span> স্বাস্থ্য ও রোগ নির্দেশিকা
-            </h3>
-            <textarea id="health-input" rows="2" placeholder="মুরগির অবস্থা লিখুন (যেমন: ঝিমাচ্ছে, চুনা পায়খানা...)" class="w-full bg-gray-50 border border-gray-200 p-3 rounded-xl text-sm focus:ring-2 focus:ring-emerald-500 outline-none"></textarea>
-            
-            <div id="ai-advice-container" class="hidden bg-emerald-50 border border-emerald-100 p-3 rounded-xl">
-                <p class="text-[9px] font-bold text-emerald-700 uppercase">পরামর্শ:</p>
-                <p id="ai-advice-text" class="text-xs text-gray-700 leading-relaxed"></p>
-            </div>
-
-            <button onclick="getAdvice()" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3 rounded-xl text-sm shadow-sm transition-all active:scale-95">
-                পরামর্শ দেখুন
-            </button>
-        </div>
-
-        <!-- Input Section -->
-        <div class="bg-white rounded-2xl shadow-sm overflow-hidden border border-gray-100">
-            <div class="flex bg-gray-50 border-b">
-                <button onclick="setTab('expense')" id="tab-exp" class="flex-1 py-3 text-sm font-bold tab-active">ব্যয়</button>
-                <button onclick="setTab('income')" id="tab-inc" class="flex-1 py-3 text-sm font-bold text-gray-400">আয়</button>
-                <button onclick="setTab('mortality')" id="tab-mor" class="flex-1 py-3 text-sm font-bold text-gray-400">মৃত্যু</button>
+    <!-- Batch Management Modal -->
+    <div id="batch-modal" class="hidden fixed inset-0 bg-black/60 z-[100] flex items-center justify-center p-4">
+        <div class="bg-white w-full max-w-lg rounded-3xl p-6 shadow-2xl">
+            <div class="flex justify-between items-center mb-6 border-b pb-4">
+                <h2 class="text-xl font-bold text-emerald-900">ব্যাচ লিস্ট</h2>
+                <button onclick="toggleBatchModal()" class="text-gray-400 hover:text-gray-600 text-2xl">×</button>
             </div>
             
-            <div class="p-5 space-y-4">
-                <div class="grid grid-cols-2 gap-3">
-                    <div class="col-span-2">
-                        <label class="text-[10px] font-bold text-gray-400 uppercase ml-1">বিবরণ</label>
-                        <select id="entry-cat" class="w-full bg-gray-50 border border-gray-200 p-3 rounded-xl text-sm font-bold outline-none"></select>
-                    </div>
-                    <div>
-                        <label class="text-[10px] font-bold text-gray-400 uppercase ml-1">পরিমাণ</label>
-                        <input type="number" id="entry-qty" placeholder="০" class="w-full bg-gray-50 border border-gray-200 p-3 rounded-xl text-sm font-bold outline-none">
-                    </div>
-                    <div>
-                        <label id="amount-label" class="text-[10px] font-bold text-gray-400 uppercase ml-1">টাকা (৳)</label>
-                        <input type="number" id="entry-amount" placeholder="০" class="w-full bg-gray-50 border border-gray-200 p-3 rounded-xl text-sm font-bold outline-none">
+            <div id="batch-list" class="space-y-3 max-h-60 overflow-y-auto mb-6 pr-2"></div>
+
+            <div class="bg-emerald-50 p-4 rounded-2xl">
+                <h3 class="text-sm font-bold text-emerald-800 mb-3">নতুন ব্যাচ তৈরি করুন</h3>
+                <div class="flex flex-col gap-2">
+                    <input type="text" id="new-batch-name" placeholder="ব্যাচের নাম (উদা: ব্যাচ-১)" class="w-full p-2 rounded-lg border focus:ring-2 focus:ring-emerald-500 outline-none">
+                    <div class="flex gap-2">
+                        <input type="date" id="new-batch-date" class="flex-1 p-2 rounded-lg border outline-none">
+                        <button onclick="createNewBatch()" class="bg-emerald-600 text-white px-4 py-2 rounded-lg font-bold hover:bg-emerald-700">যোগ করুন</button>
                     </div>
                 </div>
-                <button onclick="saveRecord()" class="w-full bg-gray-800 text-white font-bold py-4 rounded-xl shadow-lg transition-all active:scale-95">তথ্য সেভ করুন</button>
+            </div>
+        </div>
+    </div>
+
+    <main class="max-w-6xl mx-auto p-4 md:p-6 space-y-6">
+        
+        <!-- Dashboard Stats -->
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div class="bg-white p-4 rounded-2xl shadow-sm border-l-4 border-emerald-500">
+                <p class="text-[10px] uppercase font-bold text-gray-400">বাচ্চার বয়স</p>
+                <h3 id="stat-age" class="text-xl font-black text-emerald-700">০ দিন</h3>
+            </div>
+            <div class="bg-white p-4 rounded-2xl shadow-sm border-l-4 border-rose-500">
+                <p class="text-[10px] uppercase font-bold text-gray-400">মোট খরচ</p>
+                <h3 id="stat-expense" class="text-xl font-black text-rose-600">৳ ০</h3>
+            </div>
+            <div class="bg-white p-4 rounded-2xl shadow-sm border-l-4 border-blue-500">
+                <p class="text-[10px] uppercase font-bold text-gray-400">মোট বিক্রি</p>
+                <h3 id="stat-income" class="text-xl font-black text-blue-600">৳ ০</h3>
+            </div>
+            <div class="bg-white p-4 rounded-2xl shadow-sm border-l-4 border-orange-500">
+                <p class="text-[10px] uppercase font-bold text-gray-400">মৃত্যু</p>
+                <h3 id="stat-mortality" class="text-xl font-black text-orange-600">০ টি</h3>
             </div>
         </div>
 
-        <!-- History List -->
-        <div class="space-y-3">
-            <div class="flex justify-between items-center px-1">
-                <h3 class="font-bold text-gray-600 text-sm">হিসাবের খাতা</h3>
-                <button onclick="clearAllData()" class="text-[10px] text-rose-400 font-bold uppercase">সব মুছুন</button>
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <!-- Entry Form -->
+            <div class="lg:col-span-1 space-y-4">
+                <div class="bg-white p-6 rounded-3xl shadow-sm border border-gray-100">
+                    <h2 class="font-bold text-gray-800 mb-4 border-b pb-2">✍️ দৈনিক এন্ট্রি</h2>
+                    <div class="space-y-4">
+                        <div>
+                            <label class="text-[10px] font-bold text-gray-400 uppercase">হিসাবের ধরণ</label>
+                            <select id="input-type" class="w-full p-3 bg-gray-50 border rounded-xl outline-none focus:ring-2 focus:ring-emerald-500 mt-1">
+                                <option value="expense">খরচ (ফিড/ঔষধ)</option>
+                                <option value="income">বিক্রি (মুরগি/অন্যান্য)</option>
+                                <option value="mortality">মৃত্যু (বাচ্চার সংখ্যা)</option>
+                            </select>
+                        </div>
+                        <div>
+                            <input type="text" id="input-desc" placeholder="বিবরণ" class="w-full p-3 bg-gray-50 border rounded-xl outline-none focus:ring-2 focus:ring-emerald-500">
+                        </div>
+                        <div class="flex gap-2">
+                            <input type="number" id="input-qty" placeholder="পরিমাণ" class="w-1/2 p-3 bg-gray-50 border rounded-xl outline-none focus:ring-2 focus:ring-emerald-500">
+                            <input type="number" id="input-rate" placeholder="দর/পিস" class="w-1/2 p-3 bg-gray-50 border rounded-xl outline-none focus:ring-2 focus:ring-emerald-500">
+                        </div>
+                        <button onclick="saveEntry()" class="w-full bg-emerald-600 text-white font-bold py-3 rounded-xl shadow-lg hover:bg-emerald-700 transition-all active:scale-95">সেভ করুন</button>
+                    </div>
+                </div>
             </div>
-            <div id="history-list" class="space-y-2 pb-10">
-                <!-- Records list -->
+
+            <!-- List Table -->
+            <div class="lg:col-span-2">
+                <div class="bg-white rounded-3xl shadow-sm border border-gray-100 overflow-hidden">
+                    <div class="p-4 bg-gray-50 flex justify-between items-center border-b">
+                        <h3 class="font-bold text-emerald-900">লেনদেনের ইতিহাস</h3>
+                        <span id="list-batch-name" class="text-[10px] bg-emerald-100 text-emerald-700 px-2 py-1 rounded font-bold uppercase tracking-wider">ব্যাচ</span>
+                    </div>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-sm">
+                            <thead>
+                                <tr class="text-left text-gray-400 border-b">
+                                    <th class="p-4 font-bold text-[10px] uppercase">বয়স</th>
+                                    <th class="p-4 font-bold text-[10px] uppercase">বিবরণ</th>
+                                    <th class="p-4 font-bold text-[10px] uppercase text-right">টাকা</th>
+                                    <th class="p-4"></th>
+                                </tr>
+                            </thead>
+                            <tbody id="data-list" class="divide-y divide-gray-50"></tbody>
+                        </table>
+                    </div>
+                </div>
             </div>
         </div>
-
     </main>
 
-    <!-- Floating Settings -->
-    <button onclick="toggleDateModal()" class="fixed bottom-6 right-6 bg-emerald-600 text-white p-4 rounded-full shadow-2xl z-50">
-        📅
-    </button>
-
-    <!-- Date Modal -->
-    <div id="date-modal" class="fixed inset-0 bg-black/50 hidden z-[100] flex items-center justify-center p-6">
-        <div class="bg-white rounded-3xl p-6 w-full max-w-xs shadow-2xl">
-            <h3 class="text-lg font-bold text-gray-800 mb-4 text-center">ব্যাচ শুরুর তারিখ দিন</h3>
-            <input type="date" id="start-date" class="w-full p-4 bg-gray-50 border border-gray-200 rounded-xl mb-4 outline-none font-bold text-center">
-            <button onclick="saveStartDate()" class="w-full bg-emerald-600 text-white font-bold py-3 rounded-xl">সেভ করুন</button>
-            <button onclick="toggleDateModal()" class="w-full text-gray-400 text-sm mt-3">বন্ধ করুন</button>
+    <!-- Hidden Template for PDF -->
+    <div id="pdf-template">
+        <div class="pdf-header">
+            <h1 style="font-size: 24px; color: #059669; margin: 0;">স্মার্ট পোল্ট্রি রিপোর্ট</h1>
+            <p id="pdf-batch-info" style="margin: 5px 0; color: #666;"></p>
+        </div>
+        <div style="display: flex; justify-content: space-between; margin-bottom: 20px;">
+            <div style="border: 1px solid #ddd; padding: 10px; width: 45%; border-radius: 8px;">
+                <p style="font-size: 12px; margin: 0;">মোট খরচ:</p>
+                <h3 id="pdf-exp" style="margin: 5px 0;"></h3>
+            </div>
+            <div style="border: 1px solid #ddd; padding: 10px; width: 45%; border-radius: 8px;">
+                <p style="font-size: 12px; margin: 0;">মোট বিক্রি:</p>
+                <h3 id="pdf-inc" style="margin: 5px 0;"></h3>
+            </div>
+        </div>
+        <table style="width: 100%; border-collapse: collapse; font-size: 12px;">
+            <thead>
+                <tr style="background: #f3f4f6; text-align: left;">
+                    <th style="padding: 10px; border: 1px solid #ddd;">বয়স</th>
+                    <th style="padding: 10px; border: 1px solid #ddd;">বিবরণ</th>
+                    <th style="padding: 10px; border: 1px solid #ddd;">পরিমাণ</th>
+                    <th style="padding: 10px; border: 1px solid #ddd; text-right">মোট টাকা</th>
+                </tr>
+            </thead>
+            <tbody id="pdf-table-body"></tbody>
+        </table>
+        <div style="margin-top: 30px; text-align: right; border-top: 1px solid #ddd; padding-top: 10px;">
+            <p style="font-size: 12px;">রিপোর্ট তৈরির তারিখ: <span id="pdf-date"></span></p>
         </div>
     </div>
 
     <script>
-        let currentTab = 'expense';
-        let records = JSON.parse(localStorage.getItem('poultry_records_v2')) || [];
-        let startDate = localStorage.getItem('poultry_start_date_v2') || '';
-
-        const categories = {
-            expense: ['খাবার (ফীড)', 'বাচ্চা ক্রয়', 'ঔষধ/ভ্যাকসিন', 'বিদ্যুৎ বিল', 'লিটার', 'লেবার খরচ', 'অন্যান্য'],
-            income: ['মুরগি বিক্রি', 'ডিম বিক্রি', 'লিটার/বস্তা বিক্রি', 'অন্যান্য'],
-            mortality: ['মৃত মুরগি']
+        // Guidance Data
+        const guidelines = {
+            1: "🐣 প্রথম দিন: গ্লুকোজ পানি ও ভিটামিন-সি মিশিয়ে খেতে দিন। ব্রুডিং তাপমাত্রা ৯৫° ফারেনহাইট রাখুন।",
+            3: "🌡️ ৩য় দিন: তাপমাত্রা ২° কমিয়ে ৯৩° করুন। পানির পাত্র পরিষ্কার করুন নিয়মিত।",
+            5: "💉 ৫ম দিন: রানিক্ষেত (BCRD) ভ্যাকসিন দেওয়ার উপযুক্ত সময়। চোখে ১ ফোঁটা করে দিন।",
+            7: "📏 ৭ম দিন: পেপার পরিবর্তন করে নতুন লিটার বিছিয়ে দিন। ব্রুডার এলাকার পরিধি বাড়ান।",
+            10: "💊 ১০ম দিন: গামবোরো ভ্যাকসিন ১ম ডোজ দেওয়ার সময় হয়েছে।",
+            14: "🌡️ ১৪তম দিন: ব্রুডিং তাপমাত্রা কমিয়ে সাধারণ তাপমাত্রায় আনার চেষ্টা করুন। ভ্যাকসিন ২য় ডোজ।",
+            21: "🐓 ২১তম দিন: স্টার্টার ফিড থেকে গ্রোয়ার ফিড পরিবর্তন শুরু করতে পারেন। বড় জায়গার ব্যবস্থা করুন।",
+            28: "⚠️ ২৮তম দিন: রানিক্ষেত ভ্যাকসিনের বুস্টার ডোজ দেওয়ার সময়। বায়োসিকিউরিটি বজায় রাখুন।",
+            35: "💰 ৩৫তম দিন: মুরগির ওজন পরীক্ষা করুন। বাজার দর যাচাই করে বিক্রির প্রস্তুতি নিতে পারেন।",
+            default: "✅ নিয়মিত পরিষ্কার পানি, সুষম খাদ্য এবং খামারে বায়োসিকিউরিটি নিশ্চিত করুন।"
         };
 
-        const healthRules = [
-            { key: 'চুনা', advice: 'সাদা বা চুনা পায়খানা গামবোরো বা রাণিক্ষেতের লক্ষণ হতে পারে। দ্রুত লিটার পরিবর্তন করুন এবং অভিজ্ঞ চিকিৎসকের পরামর্শে ব্যবস্থা নিন।' },
-            { key: 'রক্ত', advice: 'রক্ত পায়খানা কক্সিডিওসিস এর প্রধান লক্ষণ। দ্রুত আমপ্রোলিয়াম বা ভালো মানের কক্সি-নিষেধক ঔষধ পানিতে মিশিয়ে দিন।' },
-            { key: 'ঝিমানো', advice: 'মুরগি ঝিমানো মানে শরীরে জ্বর বা প্রচণ্ড দুর্বলতা। পানিতে ইলেকট্রোলাইট বা গ্লুকোজ ও ভিটামিন-সি দিন।' },
-            { key: 'কাশি', advice: 'ঠাণ্ডা বা অ্যামোনিয়া গ্যাসের সমস্যা হতে পারে। ঘরে বাতাস চলাচলের ব্যবস্থা করুন এবং শেড শুষ্ক রাখুন।' },
-            { key: 'কম', advice: 'খাবার কম খাওয়া অসুস্থতার প্রাথমিক লক্ষণ। পানির পাত্র পরিষ্কার করুন এবং লিটার চেক করুন।' }
+        // State Management
+        let batches = JSON.parse(localStorage.getItem('poultry_batches')) || [
+            { id: 1, name: 'ব্যাচ-১', startDate: new Date().toISOString().split('T')[0] }
         ];
+        let currentBatchId = localStorage.getItem('active_batch_id') || batches[0].id;
+        let records = JSON.parse(localStorage.getItem('poultry_records_v4')) || [];
 
-        function setTab(tab) {
-            currentTab = tab;
-            document.querySelectorAll('button[id^="tab-"]').forEach(btn => {
-                btn.classList.remove('tab-active');
-                btn.classList.add('text-gray-400');
-            });
-            const btnId = tab === 'expense' ? 'tab-exp' : (tab === 'income' ? 'tab-inc' : 'tab-mor');
-            document.getElementById(btnId).classList.add('tab-active');
-            document.getElementById(btnId).classList.remove('text-gray-400');
-            updateCategoryList();
+        function toggleBatchModal() {
+            const modal = document.getElementById('batch-modal');
+            modal.classList.toggle('hidden');
+            if(!modal.classList.contains('hidden')) renderBatchList();
         }
 
-        function updateCategoryList() {
-            const select = document.getElementById('entry-cat');
-            select.innerHTML = categories[currentTab].map(cat => `<option value="${cat}">${cat}</option>`).join('');
-            
-            const qtyInput = document.getElementById('entry-qty');
-            const amountInput = document.getElementById('entry-amount');
-            
-            if(currentTab === 'mortality') {
-                amountInput.disabled = true;
-                amountInput.value = 0;
-                qtyInput.placeholder = "সংখ্যা";
-            } else {
-                amountInput.disabled = false;
-                qtyInput.placeholder = "পরিমাণ";
-            }
+        function createNewBatch() {
+            const name = document.getElementById('new-batch-name').value;
+            const date = document.getElementById('new-batch-date').value;
+            if(!name || !date) { alert("সব তথ্য পূরণ করুন!"); return; }
+
+            const newBatch = { id: Date.now(), name, startDate: date };
+            batches.push(newBatch);
+            localStorage.setItem('poultry_batches', JSON.stringify(batches));
+            switchBatch(newBatch.id);
         }
 
-        function getAdvice() {
-            const text = document.getElementById('health-input').value;
-            if(!text) return;
-
-            let finalAdvice = "মুরগির অবস্থা গভীরভাবে পর্যবেক্ষণ করুন। স্বাস্থ্যবিধি মেনে চলুন এবং কোনো অস্বাভাবিকতা দেখলে চিকিৎসকের পরামর্শ নিন।";
-            for(let rule of healthRules) {
-                if(text.includes(rule.key)) {
-                    finalAdvice = rule.advice;
-                    break;
-                }
-            }
-
-            document.getElementById('ai-advice-container').classList.remove('hidden');
-            document.getElementById('ai-advice-text').innerText = finalAdvice;
-            saveRecord(true, text);
+        function switchBatch(id) {
+            currentBatchId = id;
+            localStorage.setItem('active_batch_id', id);
+            if(!document.getElementById('batch-modal').classList.contains('hidden')) toggleBatchModal();
+            render();
         }
 
-        function saveRecord(isHealth = false, healthNote = "") {
-            const cat = isHealth ? "স্বাস্থ্য রিপোর্ট" : document.getElementById('entry-cat').value;
-            const qty = isHealth ? 0 : parseFloat(document.getElementById('entry-qty').value) || 0;
-            const amount = isHealth ? 0 : parseFloat(document.getElementById('entry-amount').value) || 0;
-            const type = isHealth ? 'mortality' : currentTab;
+        function getChickAge(batchId) {
+            const batch = batches.find(b => b.id == batchId);
+            if(!batch) return 0;
+            const start = new Date(batch.startDate);
+            const today = new Date();
+            start.setHours(0,0,0,0);
+            today.setHours(0,0,0,0);
+            const diffDays = Math.floor((today - start) / (1000 * 60 * 60 * 24)) + 1;
+            return diffDays > 0 ? diffDays : 0;
+        }
 
-            if(!isHealth && (qty <= 0 && amount <= 0)) return;
+        function saveEntry() {
+            const type = document.getElementById('input-type').value;
+            const desc = document.getElementById('input-desc').value;
+            const qty = parseFloat(document.getElementById('input-qty').value) || 0;
+            const rate = parseFloat(document.getElementById('input-rate').value) || 0;
 
-            const record = {
+            if(!desc || qty <= 0) { alert("তথ্য সঠিক দিন"); return; }
+
+            const entry = {
                 id: Date.now(),
-                type: type,
-                cat: cat,
-                qty: qty,
-                amount: amount,
-                note: healthNote,
-                date: new Date().toLocaleDateString('bn-BD', { day: 'numeric', month: 'short' })
+                batchId: currentBatchId,
+                age: getChickAge(currentBatchId),
+                type, desc, qty, rate,
+                total: type === 'mortality' ? 0 : (qty * rate)
             };
 
-            records.push(record);
-            localStorage.setItem('poultry_records_v2', JSON.stringify(records));
-            
-            if(!isHealth) {
-                document.getElementById('entry-qty').value = '';
-                document.getElementById('entry-amount').value = '';
-            }
+            records.push(entry);
+            localStorage.setItem('poultry_records_v4', JSON.stringify(records));
+            document.getElementById('input-desc').value = '';
+            document.getElementById('input-qty').value = '';
+            document.getElementById('input-rate').value = '';
             render();
         }
 
         function deleteRecord(id) {
-            records = records.filter(r => r.id !== id);
-            localStorage.setItem('poultry_records_v2', JSON.stringify(records));
-            render();
-        }
-
-        function clearAllData() {
-            if(confirm("আপনি কি নিশ্চিতভাবে সব ডাটা মুছে ফেলতে চান?")) {
-                records = [];
-                localStorage.removeItem('poultry_records_v2');
+            if(confirm("মুছে ফেলতে চান?")) {
+                records = records.filter(r => r.id !== id);
+                localStorage.setItem('poultry_records_v4', JSON.stringify(records));
                 render();
             }
         }
 
-        function render() {
-            const list = document.getElementById('history-list');
-            list.innerHTML = '';
+        async function downloadPDF() {
+            const currentBatch = batches.find(b => b.id == currentBatchId);
+            const batchRecords = records.filter(r => r.batchId == currentBatchId);
             
-            let totalIncome = 0;
-            let totalExpense = 0;
-            let totalMortality = 0;
+            // Populate PDF Template
+            document.getElementById('pdf-batch-info').innerText = `ব্যাচ: ${currentBatch.name} | শুরু: ${currentBatch.startDate}`;
+            document.getElementById('pdf-date').innerText = new Date().toLocaleDateString('bn-BD');
+            
+            let exp = 0, inc = 0;
+            const pdfTable = document.getElementById('pdf-table-body');
+            pdfTable.innerHTML = '';
 
-            records.slice().reverse().forEach(r => {
-                if(r.type === 'income') totalIncome += r.amount;
-                if(r.type === 'expense') totalExpense += r.amount;
-                if(r.cat === 'মৃত মুরগি') totalMortality += r.qty;
-
-                const colorClass = r.type === 'income' ? 'text-emerald-600' : (r.type === 'expense' ? 'text-rose-600' : 'text-gray-500');
-                const sign = r.type === 'income' ? '+' : (r.type === 'expense' ? '-' : '');
-
-                list.insertAdjacentHTML('beforeend', `
-                    <div class="bg-white p-4 rounded-xl shadow-sm border border-gray-100 flex justify-between items-center transition-all animate-in fade-in">
-                        <div class="flex-1">
-                            <div class="flex items-center gap-2">
-                                <span class="font-bold text-gray-800 text-sm">${r.cat}</span>
-                                <span class="text-[9px] bg-gray-50 px-1.5 py-0.5 rounded text-gray-400">${r.date}</span>
-                            </div>
-                            <p class="text-[10px] text-gray-400 mt-0.5">${r.note || (r.qty > 0 ? 'পরিমাণ: ' + r.qty : '')}</p>
-                        </div>
-                        <div class="text-right flex items-center gap-3">
-                            <span class="font-bold text-sm ${colorClass}">${r.amount > 0 ? sign + ' ৳' + r.amount : (r.qty > 0 ? r.qty + ' টি' : 'রিপোর্ট')}</span>
-                            <button onclick="deleteRecord(${r.id})" class="text-gray-300 hover:text-rose-400">✕</button>
-                        </div>
-                    </div>
-                `);
+            batchRecords.forEach(r => {
+                if(r.type === 'expense') exp += r.total;
+                if(r.type === 'income') inc += r.total;
+                
+                const row = `<tr>
+                    <td style="padding:8px; border:1px solid #ddd;">${r.age} দিন</td>
+                    <td style="padding:8px; border:1px solid #ddd;">${r.desc} (${r.type === 'income' ? 'বিক্রি' : (r.type === 'mortality' ? 'মৃত্যু' : 'খরচ')})</td>
+                    <td style="padding:8px; border:1px solid #ddd;">${r.qty} ${r.type === 'mortality' ? 'টি' : 'একক'}</td>
+                    <td style="padding:8px; border:1px solid #ddd; text-align:right;">${r.type === 'mortality' ? '-' : '৳' + r.total}</td>
+                </tr>`;
+                pdfTable.innerHTML += row;
             });
 
-            document.getElementById('total-income').innerText = `৳ ${totalIncome}`;
-            document.getElementById('total-expense').innerText = `৳ ${totalExpense}`;
-            document.getElementById('total-profit').innerText = `৳ ${totalIncome - totalExpense}`;
-            document.getElementById('total-mortality').innerText = `${totalMortality} টি`;
-            
-            updateDayCounter();
-        }
+            document.getElementById('pdf-exp').innerText = '৳ ' + exp.toLocaleString();
+            document.getElementById('pdf-inc').innerText = '৳ ' + inc.toLocaleString();
 
-        function updateDayCounter() {
-            if(startDate) {
-                const start = new Date(startDate);
-                const today = new Date();
-                const diffTime = today - start;
-                const diffDays = Math.max(0, Math.floor(diffTime / (1000 * 60 * 60 * 24)) + 1);
-                document.getElementById('day-counter').innerText = `দিন: ${diffDays}`;
+            const element = document.getElementById('pdf-template');
+            element.style.display = 'block';
+
+            const opt = {
+                margin: 10,
+                filename: `Poultry_Report_${currentBatch.name}.pdf`,
+                image: { type: 'jpeg', quality: 0.98 },
+                html2canvas: { scale: 2 },
+                jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+            };
+
+            try {
+                await html2pdf().set(opt).from(element).save();
+            } finally {
+                element.style.display = 'none';
             }
         }
 
-        function toggleDateModal() {
-            document.getElementById('date-modal').classList.toggle('hidden');
+        function renderBatchList() {
+            const list = document.getElementById('batch-list');
+            list.innerHTML = '';
+            batches.forEach(b => {
+                const item = document.createElement('div');
+                item.className = `p-3 rounded-xl border flex justify-between items-center transition-all ${b.id == currentBatchId ? 'batch-active' : 'bg-gray-50'}`;
+                item.innerHTML = `<div onclick="switchBatch(${b.id})" class="cursor-pointer flex-1">
+                    <p class="font-bold text-emerald-900">${b.name}</p>
+                    <p class="text-[10px] text-gray-500">শুরু: ${b.startDate}</p>
+                </div>`;
+                list.appendChild(item);
+            });
         }
 
-        function saveStartDate() {
-            startDate = document.getElementById('start-date').value;
-            localStorage.setItem('poultry_start_date_v2', startDate);
-            toggleDateModal();
-            updateDayCounter();
+        function render() {
+            const currentBatch = batches.find(b => b.id == currentBatchId) || batches[0];
+            const age = getChickAge(currentBatchId);
+            
+            document.getElementById('active-batch-name').innerText = `সেশন: ${currentBatch.name}`;
+            document.getElementById('list-batch-name').innerText = currentBatch.name;
+            document.getElementById('stat-age').innerText = `${age} দিন`;
+            document.getElementById('advice-bar').innerText = `বয়স: ${age} দিন — ${guidelines[age] || guidelines.default} | সজাগ থাকুন।`;
+
+            const batchRecords = records.filter(r => r.batchId == currentBatchId);
+            const list = document.getElementById('data-list');
+            list.innerHTML = '';
+
+            let exp = 0, inc = 0, mort = 0;
+            batchRecords.slice().reverse().forEach(r => {
+                if(r.type === 'expense') exp += r.total;
+                if(r.type === 'income') inc += r.total;
+                if(r.type === 'mortality') mort += r.qty;
+
+                const row = `<tr class="hover:bg-gray-50 border-b">
+                    <td class="p-4"><span class="bg-gray-100 px-2 py-0.5 rounded text-[10px] font-bold">${r.age} দিন</span></td>
+                    <td class="p-4">
+                        <p class="font-bold text-gray-700">${r.desc}</p>
+                        <p class="text-[10px] text-gray-400">${r.type === 'mortality' ? 'মৃত্যু' : r.qty + ' × ' + r.rate}</p>
+                    </td>
+                    <td class="p-4 text-right font-black ${r.type === 'income' ? 'text-emerald-600' : 'text-gray-800'}">
+                        ${r.type === 'mortality' ? '-' : '৳ ' + r.total.toLocaleString()}
+                    </td>
+                    <td class="p-4 text-right"><button onclick="deleteRecord(${r.id})" class="text-gray-300 hover:text-rose-500">✕</button></td>
+                </tr>`;
+                list.innerHTML += row;
+            });
+
+            document.getElementById('stat-expense').innerText = '৳ ' + exp.toLocaleString();
+            document.getElementById('stat-income').innerText = '৳ ' + inc.toLocaleString();
+            document.getElementById('stat-mortality').innerText = mort + ' টি';
         }
 
-        function scrollToHealth() {
-            document.getElementById('health-section').scrollIntoView({ behavior: 'smooth' });
-        }
-
-        window.onload = () => {
-            const today = new Date();
-            document.getElementById('current-date-display').innerText = today.toLocaleDateString('bn-BD', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
-            if(startDate) document.getElementById('start-date').value = startDate;
-            setTab('expense');
-            render();
-        };
+        window.onload = render;
     </script>
 </body>
 </html>
